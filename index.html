@@ -1,0 +1,315 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <title>Proximity Chat</title>
+
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+
+  <style>
+    body {
+      background: #121212;
+      color: white;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+
+    h1, p {
+      text-align: center;
+    }
+
+
+    .card {
+      max-width: 400px;
+      margin: 20px auto;
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin: 10px 0;
+      font-size: 16px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+
+    button:active {
+      transform: scale(0.97);
+      opacity: 0.8;
+    }
+
+
+    .dimensions {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 1200px;
+      margin: 20px auto;
+    }
+
+
+    @media (min-width: 800px) {
+      .dimensions {
+        flex-direction: row;
+      }
+    }
+
+
+    .dimension {
+      flex: 1;
+      padding: 15px;
+      border-radius: 12px;
+    }
+
+
+    .overworld { background: #1f6f5f; }
+    .nether { background: #7a1f1f; }
+    .end { background: #4b2a6f; }
+
+
+    #status, #players, #controls {
+      display: none;
+      max-width: 600px;
+      margin: 15px auto;
+      background: #1a1a1a;
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+
+    .player {
+      padding: 10px;
+      border-radius: 8px;
+      margin: 8px 0;
+      background: #2a2a2a;
+    }
+
+
+    .talking {
+      box-shadow: 0 0 12px #4caf50;
+    }
+
+
+    input[type="range"] {
+      width: 100%;
+    }
+  </style>
+</head>
+
+
+<body>
+
+
+<h1>Proximity Chat</h1>
+
+
+<!-- LOGIN -->
+<div class="card" id="login">
+  <p>Minecraft Username</p>
+  <input id="usernameInput" placeholder="Username" autocapitalize="none">
+
+
+  <p style="margin-top:10px;">Room Password</p>
+  <input id="roomCodeInput" placeholder="BMS Minecraft" autocapitalize="none">
+
+
+  <button id="joinBtn" type="button">Join</button>
+</div>
+
+
+<!-- GROUPS -->
+<div class="dimensions" id="dimensions">
+  <div class="dimension overworld">
+    <h2>Overworld</h2>
+    <button data-d="Overworld" data-g="1">Group 1</button>
+    <button data-d="Overworld" data-g="2">Group 2</button>
+    <button data-d="Overworld" data-g="3">Group 3</button>
+  </div>
+
+
+  <div class="dimension nether">
+    <h2>Nether</h2>
+    <button data-d="Nether" data-g="1">Group 1</button>
+    <button data-d="Nether" data-g="2">Group 2</button>
+    <button data-d="Nether" data-g="3">Group 3</button>
+  </div>
+
+
+  <div class="dimension end">
+    <h2>End</h2>
+    <button data-d="End" data-g="1">Group 1</button>
+    <button data-d="End" data-g="2">Group 2</button>
+    <button data-d="End" data-g="3">Group 3</button>
+  </div>
+</div>
+
+
+<div id="status"></div>
+
+
+<div id="players">
+  <strong>Players in group</strong>
+  <div id="playerList"></div>
+</div>
+
+
+<div id="controls">
+  <p>Mic Sensitivity (Right = More Sensitive)</p>
+  <input type="range" id="sensitivity" min="1" max="100" value="40">
+</div>
+
+
+<script>
+  // 🔒 ROOM PASSWORD
+  const ROOM_CODE = "BMS Minecraft";
+
+
+  // Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
+    authDomain: "proximity-chat-95107.firebaseapp.com",
+    databaseURL: "https://proximity-chat-95107-default-rtdb.firebaseio.com",
+    projectId: "proximity-chat-95107",
+    storageBucket: "proximity-chat-95107.firebasestorage.app",
+    messagingSenderId: "347116592936",
+    appId: "1:347116592936:web:4eb61da00f475c73a3fa1d"
+  };
+
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+
+  let username = "";
+  let currentPath = null;
+
+
+  const login = document.getElementById("login");
+  const dimensions = document.getElementById("dimensions");
+  const status = document.getElementById("status");
+  const playersBox = document.getElementById("players");
+  const playerList = document.getElementById("playerList");
+  const controls = document.getElementById("controls");
+  const sensitivity = document.getElementById("sensitivity");
+
+
+  // LOGIN BUTTON
+  document.getElementById("joinBtn").addEventListener("click", () => {
+    const name = document.getElementById("usernameInput").value.trim();
+    const code = document.getElementById("roomCodeInput").value.trim();
+
+
+    if (code !== ROOM_CODE) {
+      alert("Wrong room password");
+      return;
+    }
+
+
+    if (!/^[a-zA-Z0-9_]{3,16}$/.test(name)) {
+      alert("Invalid Minecraft username");
+      return;
+    }
+
+
+    username = name;
+    login.style.display = "none";
+    dimensions.style.display = "flex";
+    status.style.display = "block";
+    playersBox.style.display = "block";
+    controls.style.display = "block";
+  });
+
+
+  // GROUP JOINING
+  document.querySelectorAll("button[data-d]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (currentPath) {
+        db.ref(currentPath + "/" + username).remove();
+      }
+
+
+      currentPath = `groups/${btn.dataset.d}/${btn.dataset.g}`;
+      const ref = db.ref(currentPath + "/" + username);
+
+
+      ref.set(true);
+      ref.onDisconnect().remove();
+
+
+      status.textContent = `Connected to ${btn.dataset.d} – Group ${btn.dataset.g}`;
+
+
+      db.ref(currentPath).on("value", snap => {
+        playerList.innerHTML = "";
+        const players = snap.val() || {};
+        Object.keys(players).forEach(name => {
+          const div = document.createElement("div");
+          div.className = "player";
+          div.textContent = name;
+          playerList.appendChild(div);
+        });
+      });
+    });
+  });
+
+
+  // 🎤 MIC + FIXED SENSITIVITY
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    const ctx = new AudioContext();
+    const analyser = ctx.createAnalyser();
+    const mic = ctx.createMediaStreamSource(stream);
+    mic.connect(analyser);
+
+
+    const data = new Uint8Array(analyser.frequencyBinCount);
+
+
+    function detect() {
+      analyser.getByteFrequencyData(data);
+      const volume = data.reduce((a,b)=>a+b) / data.length;
+
+
+      // FIXED: higher slider = more sensitive
+      const threshold = 120 - sensitivity.value;
+
+
+      document.querySelectorAll(".player").forEach(p => {
+        p.classList.toggle("talking", volume > threshold);
+      });
+
+
+      requestAnimationFrame(detect);
+    }
+
+
+    detect();
+  });
+</script>
+
+
+</body>
+</html>
