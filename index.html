@@ -5,7 +5,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
 <style>
 body{
@@ -50,13 +49,6 @@ button{
 button:active{transform:scale(.96)}
 
 #joinBtn{background:#4caf50}
-
-#muteBtn{
-  background:#4caf50;
-  max-width:260px;
-  margin:10px auto;
-  display:none
-}
 
 .dimensions{
   display:none;
@@ -104,13 +96,7 @@ button:active{transform:scale(.96)}
   background:#2a2a2a;
   padding:10px;
   margin:8px 0;
-  border-radius:8px;
-  border:2px solid transparent
-}
-
-.glow{
-  border-color:#4caf50;
-  box-shadow:0 0 12px #4caf50
+  border-radius:8px
 }
 </style>
 </head>
@@ -118,8 +104,6 @@ button:active{transform:scale(.96)}
 <body>
 
 <h1>Proximity Chat</h1>
-
-<button id="muteBtn">Unmute Mic</button>
 
 <div class="card" id="login">
   <input id="usernameInput" placeholder="Minecraft Username">
@@ -171,46 +155,24 @@ const db=firebase.database();
 
 let username="";
 let path="";
-let peer=null;
-let stream=null;
-let calls={};
 let listener=null;
-let muted=true;
 
-joinBtn.onclick=async()=>{
-  if(roomCodeInput.value!==ROOM) return alert("Wrong password");
+joinBtn.onclick=()=>{
+  if(roomCodeInput.value!==ROOM){
+    alert("Wrong password");
+    return;
+  }
 
   username=usernameInput.value.trim();
-  if(!username) return alert("Enter username");
+  if(!username){
+    alert("Enter username");
+    return;
+  }
 
   login.style.display="none";
-  muteBtn.style.display="block";
   dimensions.style.display="flex";
   status.style.display="block";
-  players.style.display="block"; // ALWAYS SHOW
-
-  stream=await navigator.mediaDevices.getUserMedia({audio:true});
-  stream.getAudioTracks()[0].enabled=false;
-
-  peer=new Peer();
-  peer.on("call",call=>{
-    call.answer(stream);
-    call.on("stream",s=>playAudio(s,call.peer));
-  });
-};
-
-muteBtn.onclick=()=>{
-  if(!stream) return;
-
-  muted=!muted;
-  stream.getAudioTracks()[0].enabled=!muted;
-
-  muteBtn.textContent=muted?"Unmute Mic":"Mute Mic";
-  muteBtn.style.background=muted?"#4caf50":"#e91e63";
-
-  if(path){
-    db.ref(path+"/"+username+"/talking").set(!muted);
-  }
+  players.style.display="block";
 };
 
 function leaveGroup(){
@@ -218,11 +180,6 @@ function leaveGroup(){
 
   db.ref(path+"/"+username).remove();
   if(listener) db.ref(path).off("value",listener);
-
-  Object.values(calls).forEach(c=>c.close());
-  calls={};
-
-  document.querySelectorAll("audio").forEach(a=>a.remove());
   path="";
   playerList.innerHTML="";
 }
@@ -234,35 +191,19 @@ function joinGroup(d,g){
   status.textContent=`Joined ${d} Group ${g}`;
 
   const me=db.ref(path+"/"+username);
-  me.set({peerId:peer.id,talking:false});
+  me.set(true);
   me.onDisconnect().remove();
 
   listener=db.ref(path).on("value",snap=>{
     playerList.innerHTML="";
     const all=snap.val()||{};
-
-    for(const name in all){
+    Object.keys(all).forEach(name=>{
       const div=document.createElement("div");
-      div.className="player"+(all[name].talking?" glow":"");
+      div.className="player";
       div.textContent=name+(name===username?" (You)":"");
       playerList.appendChild(div);
-
-      if(name!==username && all[name].peerId && !calls[name]){
-        const call=peer.call(all[name].peerId,stream);
-        calls[name]=call;
-        call.on("stream",s=>playAudio(s,all[name].peerId));
-      }
-    }
+    });
   });
-}
-
-function playAudio(stream,id){
-  if(document.getElementById("a"+id)) return;
-  const a=document.createElement("audio");
-  a.id="a"+id;
-  a.srcObject=stream;
-  a.autoplay=true;
-  document.body.appendChild(a);
 }
 </script>
 
