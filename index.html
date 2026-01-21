@@ -47,21 +47,21 @@ button:active{transform:scale(.96)}
 <div class="dimensions" id="dimensions">
   <div class="dimension overworld">
     <h2>Overworld</h2>
-    <button onclick="join('Overworld',1)">Group 1</button>
-    <button onclick="join('Overworld',2)">Group 2</button>
-    <button onclick="join('Overworld',3)">Group 3</button>
+    <button onclick="joinGroup('Overworld',1)">Group 1</button>
+    <button onclick="joinGroup('Overworld',2)">Group 2</button>
+    <button onclick="joinGroup('Overworld',3)">Group 3</button>
   </div>
   <div class="dimension nether">
     <h2>Nether</h2>
-    <button onclick="join('Nether',1)">Group 1</button>
-    <button onclick="join('Nether',2)">Group 2</button>
-    <button onclick="join('Nether',3)">Group 3</button>
+    <button onclick="joinGroup('Nether',1)">Group 1</button>
+    <button onclick="joinGroup('Nether',2)">Group 2</button>
+    <button onclick="joinGroup('Nether',3)">Group 3</button>
   </div>
   <div class="dimension end">
     <h2>End</h2>
-    <button onclick="join('End',1)">Group 1</button>
-    <button onclick="join('End',2)">Group 2</button>
-    <button onclick="join('End',3)">Group 3</button>
+    <button onclick="joinGroup('End',1)">Group 1</button>
+    <button onclick="joinGroup('End',2)">Group 2</button>
+    <button onclick="joinGroup('End',3)">Group 3</button>
   </div>
 </div>
 
@@ -84,8 +84,9 @@ firebase.initializeApp({
 
 const db=firebase.database();
 
-let username="", path="", peer, stream, calls={}, muted=false;
-let analyser, data;
+let username="", path="", peer, stream;
+let calls={}, listener=null;
+let muted=false, audioCtx, analyser, data;
 
 joinBtn.onclick=async()=>{
   if(roomCodeInput.value!==ROOM) return alert("Wrong password");
@@ -94,8 +95,6 @@ joinBtn.onclick=async()=>{
 
   stream=await navigator.mediaDevices.getUserMedia({audio:true});
   peer=new Peer();
-
-  setupTalkingDetector(stream);
 
   peer.on("open",()=>{
     login.style.display="none";
@@ -117,13 +116,22 @@ muteBtn.onclick=()=>{
   muteBtn.textContent=muted?"Unmute Mic":"Mute Mic";
 };
 
-function join(d,g){
-  if(path){
-    db.ref(path+"/"+username).remove();
-    Object.values(calls).forEach(c=>c.close());
-    calls={};
-    document.querySelectorAll("audio").forEach(a=>a.remove());
-  }
+function leaveGroup(){
+  if(!path) return;
+
+  db.ref(path+"/"+username+"/isTalking").set(false);
+  db.ref(path+"/"+username).remove();
+
+  if(listener) db.ref(path).off("value",listener);
+  Object.values(calls).forEach(c=>c.close());
+  calls={};
+
+  document.querySelectorAll("audio").forEach(a=>a.remove());
+  path="";
+}
+
+function joinGroup(d,g){
+  leaveGroup();
 
   path=`groups/${d}/${g}`;
   status.textContent=`Joined ${d} Group ${g}`;
@@ -132,7 +140,9 @@ function join(d,g){
   me.set({peerId:peer.id,isTalking:false});
   me.onDisconnect().remove();
 
-  db.ref(path).on("value",snap=>{
+  startTalkingDetector();
+
+  listener=db.ref(path).on("value",snap=>{
     playerList.innerHTML="";
     const all=snap.val()||{};
     for(const name in all){
@@ -159,23 +169,28 @@ function playAudio(s,id){
   document.body.appendChild(a);
 }
 
-function setupTalkingDetector(stream){
-  const ctx=new AudioContext();
-  analyser=ctx.createAnalyser();
-  analyser.fftSize=512;
-  const src=ctx.createMediaStreamSource(stream);
+function startTalkingDetector(){
+  if(audioCtx) return;
+
+  audioCtx=new AudioContext();
+  audioCtx.resume();
+
+  analyser=audioCtx.createAnalyser();
+  analyser.fftSize=256;
+
+  const src=audioCtx.createMediaStreamSource(stream);
   src.connect(analyser);
+
   data=new Uint8Array(analyser.frequencyBinCount);
-  monitor();
+  detect();
 }
 
-function monitor(){
-  if(!path)return;
+function detect(){
+  if(!path) return;
   analyser.getByteFrequencyData(data);
   const avg=data.reduce((a,b)=>a+b)/data.length;
-  const talking=avg>20 && !muted;
-  db.ref(path+"/"+username+"/isTalking").set(talking);
-  requestAnimationFrame(monitor);
+  db.ref(path+"/"+username+"/isTalking").set(avg>25 && !muted);
+  requestAnimationFrame(detect);
 }
 </script>
 
