@@ -8,27 +8,100 @@
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
 <style>
-body{background:#121212;color:white;font-family:Arial;margin:0;padding:20px}
+body{
+  background:#121212;
+  color:white;
+  font-family:Arial;
+  margin:0;
+  padding:20px
+}
+
 h1,h2{text-align:center}
 
-.card{max-width:400px;margin:20px auto;background:#1a1a1a;padding:15px;border-radius:12px;text-align:center}
-input{width:100%;padding:12px;margin-top:10px;border-radius:8px;border:none;background:#333;color:white}
-button{width:100%;padding:14px;margin:10px 0;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
-button:active{transform:scale(.96)}
-#joinBtn{background:#4caf50}
-#muteBtn{background:#4caf50;max-width:220px;margin:10px auto;display:none}
+.card{
+  max-width:400px;
+  margin:20px auto;
+  background:#1a1a1a;
+  padding:15px;
+  border-radius:12px;
+  text-align:center
+}
 
-.dimensions{display:none;flex-direction:column;gap:20px;max-width:1200px;margin:20px auto}
-@media(min-width:800px){.dimensions{flex-direction:row}}
-.dimension{flex:1;padding:15px;border-radius:12px}
+input{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:8px;
+  border:none;
+  background:#333;
+  color:white
+}
+
+button{
+  width:100%;
+  padding:14px;
+  margin:10px 0;
+  border:none;
+  border-radius:10px;
+  font-weight:bold;
+  cursor:pointer
+}
+
+button:active{transform:scale(.96)}
+
+#joinBtn{background:#4caf50}
+
+#muteBtn{
+  display:none;
+  max-width:260px;
+  margin:15px auto;
+  background:#4caf50;
+}
+
+.dimensions{
+  display:none;
+  flex-direction:column;
+  gap:20px;
+  max-width:1200px;
+  margin:20px auto
+}
+
+@media(min-width:800px){
+  .dimensions{flex-direction:row}
+}
+
+.dimension{
+  flex:1;
+  padding:15px;
+  border-radius:12px
+}
+
 .overworld{background:#1f6f5f}
 .nether{background:#7a1f1f}
 .end{background:#4b2a6f}
 
-#status,#players{display:none;max-width:600px;margin:15px auto;background:#1a1a1a;padding:12px;border-radius:10px;text-align:center}
+#status,#players{
+  display:none;
+  max-width:600px;
+  margin:15px auto;
+  background:#1a1a1a;
+  padding:12px;
+  border-radius:10px;
+  text-align:center
+}
 
-.player{background:#2a2a2a;padding:10px;margin:8px 0;border-radius:8px;border:2px solid transparent}
-.glow{border-color:#4caf50;box-shadow:0 0 12px #4caf50}
+.player{
+  background:#2a2a2a;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:2px solid transparent
+}
+
+.glow{
+  border-color:#4caf50;
+  box-shadow:0 0 12px #4caf50
+}
 </style>
 </head>
 
@@ -36,13 +109,13 @@ button:active{transform:scale(.96)}
 
 <h1>Proximity Chat</h1>
 
+<button id="muteBtn">Unmute Mic</button>
+
 <div class="card" id="login">
   <input id="usernameInput" placeholder="Minecraft Username">
   <input id="roomCodeInput" type="password" placeholder="Room password">
   <button id="joinBtn">Join</button>
 </div>
-
-<button id="muteBtn">Unmute Mic</button>
 
 <div class="dimensions" id="dimensions">
   <div class="dimension overworld">
@@ -51,12 +124,14 @@ button:active{transform:scale(.96)}
     <button onclick="joinGroup('Overworld',2)">Group 2</button>
     <button onclick="joinGroup('Overworld',3)">Group 3</button>
   </div>
+
   <div class="dimension nether">
     <h2>Nether</h2>
     <button onclick="joinGroup('Nether',1)">Group 1</button>
     <button onclick="joinGroup('Nether',2)">Group 2</button>
     <button onclick="joinGroup('Nether',3)">Group 3</button>
   </div>
+
   <div class="dimension end">
     <h2>End</h2>
     <button onclick="joinGroup('End',1)">Group 1</button>
@@ -84,34 +159,47 @@ firebase.initializeApp({
 
 const db=firebase.database();
 
-let username="", path="", peer, stream;
-let calls={}, listener=null;
+let username="";
+let path="";
+let peer;
+let stream;
+let calls={};
+let listener=null;
 let muted=true;
 
 joinBtn.onclick=async()=>{
-  if(roomCodeInput.value!==ROOM) return alert("Wrong password");
+  if(roomCodeInput.value!==ROOM){
+    alert("Wrong password");
+    return;
+  }
+
   username=usernameInput.value.trim();
-  if(!username) return alert("Enter username");
+  if(!username){
+    alert("Enter username");
+    return;
+  }
 
   stream=await navigator.mediaDevices.getUserMedia({audio:true});
-  stream.getAudioTracks()[0].enabled=false; // START MUTED
+  stream.getAudioTracks()[0].enabled=false;
 
   peer=new Peer();
-  peer.on("call",c=>{
-    c.answer(stream);
-    c.on("stream",s=>playAudio(s,c.peer));
+
+  peer.on("call",call=>{
+    call.answer(stream);
+    call.on("stream",s=>playAudio(s,call.peer));
   });
 
   login.style.display="none";
   dimensions.style.display="flex";
-  players.style.display="block";
   status.style.display="block";
-  muteBtn.style.display="block"; // ALWAYS SHOW
+  players.style.display="block";
+  muteBtn.style.display="block";
 };
 
 muteBtn.onclick=()=>{
   muted=!muted;
   stream.getAudioTracks()[0].enabled=!muted;
+
   muteBtn.textContent=muted?"Unmute Mic":"Mute Mic";
   muteBtn.style.background=muted?"#4caf50":"#e91e63";
 
@@ -122,16 +210,20 @@ muteBtn.onclick=()=>{
 
 function leaveGroup(){
   if(!path) return;
+
   db.ref(path+"/"+username).remove();
   if(listener) db.ref(path).off("value",listener);
+
   Object.values(calls).forEach(c=>c.close());
   calls={};
+
   document.querySelectorAll("audio").forEach(a=>a.remove());
   path="";
 }
 
 function joinGroup(d,g){
   leaveGroup();
+
   path=`groups/${d}/${g}`;
   status.textContent=`Joined ${d} Group ${g}`;
 
@@ -142,6 +234,7 @@ function joinGroup(d,g){
   listener=db.ref(path).on("value",snap=>{
     playerList.innerHTML="";
     const all=snap.val()||{};
+
     for(const name in all){
       const div=document.createElement("div");
       div.className="player"+(all[name].talking?" glow":"");
@@ -157,11 +250,11 @@ function joinGroup(d,g){
   });
 }
 
-function playAudio(s,id){
-  if(document.getElementById("a"+id))return;
+function playAudio(stream,id){
+  if(document.getElementById("a"+id)) return;
   const a=document.createElement("audio");
   a.id="a"+id;
-  a.srcObject=s;
+  a.srcObject=stream;
   a.autoplay=true;
   document.body.appendChild(a);
 }
