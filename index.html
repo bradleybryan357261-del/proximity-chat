@@ -15,10 +15,12 @@
       background:#121212;
       color:white;
       font-family:Arial,sans-serif;
-      padding:20px;
       margin:0;
+      padding:20px;
     }
+
     h1,h2{text-align:center;}
+
     .card{
       max-width:400px;
       margin:20px auto;
@@ -27,6 +29,7 @@
       border-radius:12px;
       text-align:center;
     }
+
     input{
       width:100%;
       padding:12px;
@@ -35,7 +38,9 @@
       border:none;
       background:#333;
       color:white;
+      font-size:16px;
     }
+
     button{
       width:100%;
       padding:14px;
@@ -46,7 +51,9 @@
       font-weight:bold;
       cursor:pointer;
     }
+
     button:active{transform:scale(0.96);}
+
     #joinBtn{background:#4caf50;}
     #muteBtn{
       display:none;
@@ -62,12 +69,17 @@
       max-width:1200px;
       margin:20px auto;
     }
-    @media(min-width:800px){.dimensions{flex-direction:row;}}
+
+    @media(min-width:800px){
+      .dimensions{flex-direction:row;}
+    }
+
     .dimension{
       flex:1;
       padding:15px;
       border-radius:12px;
     }
+
     .overworld{background:#1f6f5f;}
     .nether{background:#7a1f1f;}
     .end{background:#4b2a6f;}
@@ -89,6 +101,7 @@
       border-radius:8px;
       border:2px solid transparent;
     }
+
     .talking{
       border-color:#4caf50;
       box-shadow:0 0 12px #4caf50;
@@ -113,22 +126,28 @@
 <button id="muteBtn">Mute Mic</button>
 
 <div class="dimensions" id="dimensions">
+
   <div class="dimension overworld">
     <h2>Overworld</h2>
     <button data-d="Overworld" data-g="1">Group 1</button>
     <button data-d="Overworld" data-g="2">Group 2</button>
+    <button data-d="Overworld" data-g="3">Group 3</button>
   </div>
 
   <div class="dimension nether">
     <h2>Nether</h2>
     <button data-d="Nether" data-g="1">Group 1</button>
     <button data-d="Nether" data-g="2">Group 2</button>
+    <button data-d="Nether" data-g="3">Group 3</button>
   </div>
 
   <div class="dimension end">
     <h2>End</h2>
     <button data-d="End" data-g="1">Group 1</button>
+    <button data-d="End" data-g="2">Group 2</button>
+    <button data-d="End" data-g="3">Group 3</button>
   </div>
+
 </div>
 
 <div id="status"></div>
@@ -139,36 +158,36 @@
 </div>
 
 <script>
-  const ROOM_CODE = "BMS Minecraft";
+  const ROOM_CODE="BMS Minecraft";
 
   firebase.initializeApp({
-    apiKey: "AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
-    authDomain: "proximity-chat-95107.firebaseapp.com",
-    databaseURL: "https://proximity-chat-95107-default-rtdb.firebaseio.com",
-    projectId: "proximity-chat-95107",
-    storageBucket: "proximity-chat-95107.firebasestorage.app",
-    messagingSenderId: "347116592936",
-    appId: "1:347116592936:web:4eb61da00f475c73a3fa1d"
+    apiKey:"AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
+    authDomain:"proximity-chat-95107.firebaseapp.com",
+    databaseURL:"https://proximity-chat-95107-default-rtdb.firebaseio.com",
+    projectId:"proximity-chat-95107",
+    storageBucket:"proximity-chat-95107.firebasestorage.app",
+    messagingSenderId:"347116592936",
+    appId:"1:347116592936:web:4eb61da00f475c73a3fa1d"
   });
 
-  const db = firebase.database();
+  const db=firebase.database();
 
   let username="";
   let currentPath="";
   let peer;
-  let myStream;
+  let stream;
   let calls={};
   let muted=false;
 
-  joinBtn.onclick = async () => {
-    if(roomCodeInput.value!==ROOM_CODE) return alert("Wrong password");
+  joinBtn.onclick=async()=>{
+    if(roomCodeInput.value!==ROOM_CODE)return alert("Wrong password");
     username=usernameInput.value.trim();
-    if(!username) return alert("Enter username");
+    if(!username)return alert("Enter username");
 
-    myStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    stream=await navigator.mediaDevices.getUserMedia({audio:true});
     peer=new Peer();
 
-    peer.on("open", id=>{
+    peer.on("open",()=>{
       login.style.display="none";
       dimensions.style.display="flex";
       status.style.display="block";
@@ -176,15 +195,15 @@
       muteBtn.style.display="block";
     });
 
-    peer.on("call", call=>{
-      call.answer(myStream);
-      call.on("stream", s=>playAudio(s,call.peer));
+    peer.on("call",call=>{
+      call.answer(stream);
+      call.on("stream",s=>playAudio(s,call.peer));
     });
   };
 
   muteBtn.onclick=()=>{
     muted=!muted;
-    myStream.getAudioTracks()[0].enabled=!muted;
+    stream.getAudioTracks()[0].enabled=!muted;
     muteBtn.textContent=muted?"Unmute Mic":"Mute Mic";
   };
 
@@ -214,8 +233,8 @@
           div.textContent=name+(name===username?" (You)":"");
           playerList.appendChild(div);
 
-          if(name!==username && d.peerId && !calls[name]){
-            const call=peer.call(d.peerId,myStream);
+          if(name!==username&&d.peerId&&!calls[name]){
+            const call=peer.call(d.peerId,stream);
             calls[name]=call;
             call.on("stream",s=>playAudio(s,d.peerId));
           }
@@ -224,11 +243,11 @@
     };
   });
 
-  function playAudio(stream,id){
+  function playAudio(s,id){
     if(document.getElementById("a"+id))return;
     const a=document.createElement("audio");
     a.id="a"+id;
-    a.srcObject=stream;
+    a.srcObject=s;
     a.autoplay=true;
     document.body.appendChild(a);
   }
@@ -239,15 +258,16 @@
   const data=new Uint8Array(analyser.frequencyBinCount);
 
   function monitor(){
-    if(!myStream||!currentPath)return;
-    const src=ctx.createMediaStreamSource(myStream);
+    if(!stream||!currentPath)return;
+    const src=ctx.createMediaStreamSource(stream);
     src.connect(analyser);
     analyser.getByteFrequencyData(data);
     const vol=data.reduce((a,b)=>a+b)/data.length;
     db.ref(currentPath+"/"+username+"/isTalking").set(vol>25&&!muted);
     requestAnimationFrame(monitor);
   }
-  setTimeout(monitor,2000);
+
+  setTimeout(monitor,1500);
 </script>
 
 </body>
