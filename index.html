@@ -8,91 +8,27 @@
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
 <style>
-body {
-  background:#121212;
-  color:white;
-  font-family:Arial,sans-serif;
-  margin:0;
-  padding:20px;
-}
-h1,h2{text-align:center;}
+body{background:#121212;color:white;font-family:Arial;margin:0;padding:20px}
+h1,h2{text-align:center}
 
-.card {
-  max-width:400px;
-  margin:20px auto;
-  background:#1a1a1a;
-  padding:15px;
-  border-radius:12px;
-  text-align:center;
-}
+.card{max-width:400px;margin:20px auto;background:#1a1a1a;padding:15px;border-radius:12px;text-align:center}
+input{width:100%;padding:12px;margin-top:10px;border-radius:8px;border:none;background:#333;color:white}
+button{width:100%;padding:14px;margin:10px 0;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
+button:active{transform:scale(.96)}
+#joinBtn{background:#4caf50}
+#muteBtn{display:none;background:#e91e63;max-width:200px;margin:10px auto}
 
-input {
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:8px;
-  border:none;
-  background:#333;
-  color:white;
-}
+.dimensions{display:none;flex-direction:column;gap:20px;max-width:1200px;margin:20px auto}
+@media(min-width:800px){.dimensions{flex-direction:row}}
+.dimension{flex:1;padding:15px;border-radius:12px}
+.overworld{background:#1f6f5f}
+.nether{background:#7a1f1f}
+.end{background:#4b2a6f}
 
-button {
-  width:100%;
-  padding:14px;
-  margin:10px 0;
-  border:none;
-  border-radius:10px;
-  font-weight:bold;
-  cursor:pointer;
-}
-button:active{transform:scale(0.96);}
-#joinBtn{background:#4caf50;}
-#muteBtn{
-  display:none;
-  background:#e91e63;
-  max-width:200px;
-  margin:10px auto;
-}
+#status,#players{display:none;max-width:600px;margin:15px auto;background:#1a1a1a;padding:12px;border-radius:10px;text-align:center}
 
-.dimensions{
-  display:none;
-  flex-direction:column;
-  gap:20px;
-  max-width:1200px;
-  margin:20px auto;
-}
-@media(min-width:800px){.dimensions{flex-direction:row;}}
-
-.dimension{
-  flex:1;
-  padding:15px;
-  border-radius:12px;
-}
-.overworld{background:#1f6f5f;}
-.nether{background:#7a1f1f;}
-.end{background:#4b2a6f;}
-
-#status,#players{
-  max-width:600px;
-  margin:15px auto;
-  background:#1a1a1a;
-  padding:12px;
-  border-radius:10px;
-  text-align:center;
-  display:none;
-}
-
-.player{
-  background:#2a2a2a;
-  padding:10px;
-  margin:8px 0;
-  border-radius:8px;
-  border:2px solid transparent;
-}
-.talking{
-  border-color:#4caf50;
-  box-shadow:0 0 12px #4caf50;
-}
+.player{background:#2a2a2a;padding:10px;margin:8px 0;border-radius:8px;border:2px solid transparent}
+.talking{border-color:#4caf50;box-shadow:0 0 12px #4caf50}
 </style>
 </head>
 
@@ -111,21 +47,21 @@ button:active{transform:scale(0.96);}
 <div class="dimensions" id="dimensions">
   <div class="dimension overworld">
     <h2>Overworld</h2>
-    <button onclick="joinGroup('Overworld',1)">Group 1</button>
-    <button onclick="joinGroup('Overworld',2)">Group 2</button>
-    <button onclick="joinGroup('Overworld',3)">Group 3</button>
+    <button onclick="join('Overworld',1)">Group 1</button>
+    <button onclick="join('Overworld',2)">Group 2</button>
+    <button onclick="join('Overworld',3)">Group 3</button>
   </div>
   <div class="dimension nether">
     <h2>Nether</h2>
-    <button onclick="joinGroup('Nether',1)">Group 1</button>
-    <button onclick="joinGroup('Nether',2)">Group 2</button>
-    <button onclick="joinGroup('Nether',3)">Group 3</button>
+    <button onclick="join('Nether',1)">Group 1</button>
+    <button onclick="join('Nether',2)">Group 2</button>
+    <button onclick="join('Nether',3)">Group 3</button>
   </div>
   <div class="dimension end">
     <h2>End</h2>
-    <button onclick="joinGroup('End',1)">Group 1</button>
-    <button onclick="joinGroup('End',2)">Group 2</button>
-    <button onclick="joinGroup('End',3)">Group 3</button>
+    <button onclick="join('End',1)">Group 1</button>
+    <button onclick="join('End',2)">Group 2</button>
+    <button onclick="join('End',3)">Group 3</button>
   </div>
 </div>
 
@@ -147,7 +83,9 @@ firebase.initializeApp({
 });
 
 const db=firebase.database();
+
 let username="", path="", peer, stream, calls={}, muted=false;
+let analyser, data;
 
 joinBtn.onclick=async()=>{
   if(roomCodeInput.value!==ROOM) return alert("Wrong password");
@@ -156,6 +94,8 @@ joinBtn.onclick=async()=>{
 
   stream=await navigator.mediaDevices.getUserMedia({audio:true});
   peer=new Peer();
+
+  setupTalkingDetector(stream);
 
   peer.on("open",()=>{
     login.style.display="none";
@@ -177,7 +117,7 @@ muteBtn.onclick=()=>{
   muteBtn.textContent=muted?"Unmute Mic":"Mute Mic";
 };
 
-function joinGroup(d,g){
+function join(d,g){
   if(path){
     db.ref(path+"/"+username).remove();
     Object.values(calls).forEach(c=>c.close());
@@ -195,7 +135,7 @@ function joinGroup(d,g){
   db.ref(path).on("value",snap=>{
     playerList.innerHTML="";
     const all=snap.val()||{};
-    Object.keys(all).forEach(name=>{
+    for(const name in all){
       const div=document.createElement("div");
       div.className="player"+(all[name].isTalking?" talking":"");
       div.textContent=name+(name===username?" (You)":"");
@@ -206,7 +146,7 @@ function joinGroup(d,g){
         calls[name]=call;
         call.on("stream",s=>playAudio(s,all[name].peerId));
       }
-    });
+    }
   });
 }
 
@@ -219,21 +159,24 @@ function playAudio(s,id){
   document.body.appendChild(a);
 }
 
-const ctx=new AudioContext();
-const analyser=ctx.createAnalyser();
-analyser.fftSize=256;
-const data=new Uint8Array(analyser.frequencyBinCount);
-
-function monitor(){
-  if(!stream||!path)return;
+function setupTalkingDetector(stream){
+  const ctx=new AudioContext();
+  analyser=ctx.createAnalyser();
+  analyser.fftSize=512;
   const src=ctx.createMediaStreamSource(stream);
   src.connect(analyser);
+  data=new Uint8Array(analyser.frequencyBinCount);
+  monitor();
+}
+
+function monitor(){
+  if(!path)return;
   analyser.getByteFrequencyData(data);
-  const vol=data.reduce((a,b)=>a+b)/data.length;
-  db.ref(path+"/"+username+"/isTalking").set(vol>25&&!muted);
+  const avg=data.reduce((a,b)=>a+b)/data.length;
+  const talking=avg>20 && !muted;
+  db.ref(path+"/"+username+"/isTalking").set(talking);
   requestAnimationFrame(monitor);
 }
-setTimeout(monitor,1500);
 </script>
 
 </body>
