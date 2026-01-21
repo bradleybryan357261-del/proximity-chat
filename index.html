@@ -16,7 +16,7 @@ input{width:100%;padding:12px;margin-top:10px;border-radius:8px;border:none;back
 button{width:100%;padding:14px;margin:10px 0;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
 button:active{transform:scale(.96)}
 #joinBtn{background:#4caf50}
-#muteBtn{display:none;background:#4caf50;max-width:220px;margin:10px auto}
+#muteBtn{background:#4caf50;max-width:220px;margin:10px auto;display:none}
 
 .dimensions{display:none;flex-direction:column;gap:20px;max-width:1200px;margin:20px auto}
 @media(min-width:800px){.dimensions{flex-direction:row}}
@@ -106,7 +106,7 @@ joinBtn.onclick=async()=>{
   dimensions.style.display="flex";
   players.style.display="block";
   status.style.display="block";
-  muteBtn.style.display="block";
+  muteBtn.style.display="block"; // ALWAYS SHOW
 };
 
 muteBtn.onclick=()=>{
