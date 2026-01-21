@@ -15,9 +15,7 @@
       padding: 20px;
     }
 
-    h1, h2 {
-      text-align: center;
-    }
+    h1, h2 { text-align: center; }
 
     .card {
       max-width: 400px;
@@ -47,9 +45,7 @@
       cursor: pointer;
     }
 
-    button:active {
-      transform: scale(0.96);
-    }
+    button:active { transform: scale(0.96); }
 
     .dimensions {
       display: none;
@@ -60,9 +56,7 @@
     }
 
     @media (min-width: 800px) {
-      .dimensions {
-        flex-direction: row;
-      }
+      .dimensions { flex-direction: row; }
     }
 
     .dimension {
@@ -90,7 +84,7 @@
       border-radius: 8px;
       margin: 8px 0;
       background: #2a2a2a;
-      transition: box-shadow 0.1s, background 0.1s;
+      transition: background 0.1s, box-shadow 0.1s;
     }
 
     .talking {
@@ -189,22 +183,23 @@
       ref.set(true);
       ref.onDisconnect().remove();
 
-      status.textContent = `Connected to ${btn.dataset.d} – Group ${btn.dataset.g}`;
+      status.textContent =
+        `Connected to ${btn.dataset.d} – Group ${btn.dataset.g}`;
 
       db.ref(currentPath).on("value", snap => {
         playerList.innerHTML = "";
         const players = snap.val() || {};
-        Object.keys(players).forEach(name => {
+        Object.keys(players).forEach(p => {
           const div = document.createElement("div");
           div.className = "player";
-          div.textContent = name;
+          div.textContent = p;
           playerList.appendChild(div);
         });
       });
     };
   });
 
-  // 🎤 FULL SENSITIVITY + WORKING TALK GLOW
+  // 🎤 MIC — FULL SENSITIVITY + WORKING GREEN GLOW
   navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
     const ctx = new AudioContext();
     const analyser = ctx.createAnalyser();
