@@ -15,7 +15,9 @@
       padding: 20px;
     }
 
-    h1 { text-align: center; }
+    h1, h2 {
+      text-align: center;
+    }
 
     .card {
       max-width: 400px;
@@ -38,7 +40,7 @@
     button {
       width: 100%;
       padding: 14px;
-      margin-top: 15px;
+      margin: 10px 0;
       font-size: 16px;
       border: none;
       border-radius: 10px;
@@ -58,7 +60,9 @@
     }
 
     @media (min-width: 800px) {
-      .dimensions { flex-direction: row; }
+      .dimensions {
+        flex-direction: row;
+      }
     }
 
     .dimension {
@@ -100,6 +104,7 @@
 
 <h1>Proximity Chat</h1>
 
+<!-- LOGIN -->
 <div class="card" id="login">
   <p>Minecraft Username</p>
   <input id="usernameInput" placeholder="Username" autocapitalize="none">
@@ -110,6 +115,7 @@
   <button id="joinBtn">Join</button>
 </div>
 
+<!-- GROUPS -->
 <div class="dimensions" id="dimensions">
   <div class="dimension overworld">
     <h2>Overworld</h2>
@@ -159,7 +165,7 @@
   let username = "";
   let currentPath = "";
 
-  document.getElementById("joinBtn").onclick = () => {
+  joinBtn.onclick = () => {
     const name = usernameInput.value.trim();
     const code = roomCodeInput.value.trim();
 
@@ -198,7 +204,7 @@
     };
   });
 
-  // 🎤 FULL SENSITIVITY MIC + TALKING GLOW
+  // 🎤 FULL SENSITIVITY + WORKING TALK GLOW
   navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
     const ctx = new AudioContext();
     const analyser = ctx.createAnalyser();
@@ -209,20 +215,20 @@
 
     const data = new Uint8Array(analyser.frequencyBinCount);
 
-    function loop() {
+    function detect() {
       analyser.getByteFrequencyData(data);
       const volume = data.reduce((a, b) => a + b) / data.length;
 
-      const talking = volume > 25; // ALWAYS sensitive
+      const talking = volume > 30;
 
       document.querySelectorAll(".player").forEach(p => {
         p.classList.toggle("talking", talking);
       });
 
-      requestAnimationFrame(loop);
+      requestAnimationFrame(detect);
     }
 
-    loop();
+    detect();
   });
 </script>
 
