@@ -1,112 +1,99 @@
 <!DOCTYPE html>
 <html>
 <head>
- <h1>HELLO TEST</h1>
+<title>Proximity Chat</title>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
-  <!-- PeerJS -->
-  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+<style>
+body {
+  background:#121212;
+  color:white;
+  font-family:Arial,sans-serif;
+  margin:0;
+  padding:20px;
+}
+h1,h2{text-align:center;}
 
-  <style>
-    body {
-      background:#121212;
-      color:white;
-      font-family:Arial,sans-serif;
-      margin:0;
-      padding:20px;
-    }
+.card {
+  max-width:400px;
+  margin:20px auto;
+  background:#1a1a1a;
+  padding:15px;
+  border-radius:12px;
+  text-align:center;
+}
 
-    h1,h2{text-align:center;}
+input {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:8px;
+  border:none;
+  background:#333;
+  color:white;
+}
 
-    .card{
-      max-width:400px;
-      margin:20px auto;
-      background:#1a1a1a;
-      padding:15px;
-      border-radius:12px;
-      text-align:center;
-    }
+button {
+  width:100%;
+  padding:14px;
+  margin:10px 0;
+  border:none;
+  border-radius:10px;
+  font-weight:bold;
+  cursor:pointer;
+}
+button:active{transform:scale(0.96);}
+#joinBtn{background:#4caf50;}
+#muteBtn{
+  display:none;
+  background:#e91e63;
+  max-width:200px;
+  margin:10px auto;
+}
 
-    input{
-      width:100%;
-      padding:12px;
-      margin-top:10px;
-      border-radius:8px;
-      border:none;
-      background:#333;
-      color:white;
-      font-size:16px;
-    }
+.dimensions{
+  display:none;
+  flex-direction:column;
+  gap:20px;
+  max-width:1200px;
+  margin:20px auto;
+}
+@media(min-width:800px){.dimensions{flex-direction:row;}}
 
-    button{
-      width:100%;
-      padding:14px;
-      margin:10px 0;
-      border:none;
-      border-radius:10px;
-      font-size:16px;
-      font-weight:bold;
-      cursor:pointer;
-    }
+.dimension{
+  flex:1;
+  padding:15px;
+  border-radius:12px;
+}
+.overworld{background:#1f6f5f;}
+.nether{background:#7a1f1f;}
+.end{background:#4b2a6f;}
 
-    button:active{transform:scale(0.96);}
+#status,#players{
+  max-width:600px;
+  margin:15px auto;
+  background:#1a1a1a;
+  padding:12px;
+  border-radius:10px;
+  text-align:center;
+  display:none;
+}
 
-    #joinBtn{background:#4caf50;}
-    #muteBtn{
-      display:none;
-      background:#e91e63;
-      max-width:200px;
-      margin:10px auto;
-    }
-
-    .dimensions{
-      display:none;
-      flex-direction:column;
-      gap:20px;
-      max-width:1200px;
-      margin:20px auto;
-    }
-
-    @media(min-width:800px){
-      .dimensions{flex-direction:row;}
-    }
-
-    .dimension{
-      flex:1;
-      padding:15px;
-      border-radius:12px;
-    }
-
-    .overworld{background:#1f6f5f;}
-    .nether{background:#7a1f1f;}
-    .end{background:#4b2a6f;}
-
-    #status,#players{
-      display:none;
-      max-width:600px;
-      margin:15px auto;
-      background:#1a1a1a;
-      padding:12px;
-      border-radius:10px;
-      text-align:center;
-    }
-
-    .player{
-      background:#2a2a2a;
-      padding:10px;
-      margin:8px 0;
-      border-radius:8px;
-      border:2px solid transparent;
-    }
-
-    .talking{
-      border-color:#4caf50;
-      box-shadow:0 0 12px #4caf50;
-    }
-  </style>
+.player{
+  background:#2a2a2a;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:2px solid transparent;
+}
+.talking{
+  border-color:#4caf50;
+  box-shadow:0 0 12px #4caf50;
+}
+</style>
 </head>
 
 <body>
@@ -114,40 +101,32 @@
 <h1>Proximity Chat</h1>
 
 <div class="card" id="login">
-  <p>Minecraft Username</p>
-  <input id="usernameInput" placeholder="Username" autocapitalize="none">
-
-  <p style="margin-top:10px;">Room Password</p>
+  <input id="usernameInput" placeholder="Minecraft Username">
   <input id="roomCodeInput" type="password" placeholder="Room password">
-
   <button id="joinBtn">Join</button>
 </div>
 
 <button id="muteBtn">Mute Mic</button>
 
 <div class="dimensions" id="dimensions">
-
   <div class="dimension overworld">
     <h2>Overworld</h2>
-    <button data-d="Overworld" data-g="1">Group 1</button>
-    <button data-d="Overworld" data-g="2">Group 2</button>
-    <button data-d="Overworld" data-g="3">Group 3</button>
+    <button onclick="joinGroup('Overworld',1)">Group 1</button>
+    <button onclick="joinGroup('Overworld',2)">Group 2</button>
+    <button onclick="joinGroup('Overworld',3)">Group 3</button>
   </div>
-
   <div class="dimension nether">
     <h2>Nether</h2>
-    <button data-d="Nether" data-g="1">Group 1</button>
-    <button data-d="Nether" data-g="2">Group 2</button>
-    <button data-d="Nether" data-g="3">Group 3</button>
+    <button onclick="joinGroup('Nether',1)">Group 1</button>
+    <button onclick="joinGroup('Nether',2)">Group 2</button>
+    <button onclick="joinGroup('Nether',3)">Group 3</button>
   </div>
-
   <div class="dimension end">
     <h2>End</h2>
-    <button data-d="End" data-g="1">Group 1</button>
-    <button data-d="End" data-g="2">Group 2</button>
-    <button data-d="End" data-g="3">Group 3</button>
+    <button onclick="joinGroup('End',1)">Group 1</button>
+    <button onclick="joinGroup('End',2)">Group 2</button>
+    <button onclick="joinGroup('End',3)">Group 3</button>
   </div>
-
 </div>
 
 <div id="status"></div>
@@ -158,118 +137,104 @@
 </div>
 
 <script>
-  const ROOM_CODE="BMS Minecraft";
+const ROOM="BMS Minecraft";
 
-  firebase.initializeApp({
-    apiKey:"AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
-    authDomain:"proximity-chat-95107.firebaseapp.com",
-    databaseURL:"https://proximity-chat-95107-default-rtdb.firebaseio.com",
-    projectId:"proximity-chat-95107",
-    storageBucket:"proximity-chat-95107.firebasestorage.app",
-    messagingSenderId:"347116592936",
-    appId:"1:347116592936:web:4eb61da00f475c73a3fa1d"
+firebase.initializeApp({
+  apiKey:"AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
+  authDomain:"proximity-chat-95107.firebaseapp.com",
+  databaseURL:"https://proximity-chat-95107-default-rtdb.firebaseio.com",
+  projectId:"proximity-chat-95107"
+});
+
+const db=firebase.database();
+let username="", path="", peer, stream, calls={}, muted=false;
+
+joinBtn.onclick=async()=>{
+  if(roomCodeInput.value!==ROOM) return alert("Wrong password");
+  username=usernameInput.value.trim();
+  if(!username) return alert("Enter username");
+
+  stream=await navigator.mediaDevices.getUserMedia({audio:true});
+  peer=new Peer();
+
+  peer.on("open",()=>{
+    login.style.display="none";
+    dimensions.style.display="flex";
+    players.style.display="block";
+    status.style.display="block";
+    muteBtn.style.display="block";
   });
 
-  const db=firebase.database();
+  peer.on("call",c=>{
+    c.answer(stream);
+    c.on("stream",s=>playAudio(s,c.peer));
+  });
+};
 
-  let username="";
-  let currentPath="";
-  let peer;
-  let stream;
-  let calls={};
-  let muted=false;
+muteBtn.onclick=()=>{
+  muted=!muted;
+  stream.getAudioTracks()[0].enabled=!muted;
+  muteBtn.textContent=muted?"Unmute Mic":"Mute Mic";
+};
 
-  joinBtn.onclick=async()=>{
-    if(roomCodeInput.value!==ROOM_CODE)return alert("Wrong password");
-    username=usernameInput.value.trim();
-    if(!username)return alert("Enter username");
+function joinGroup(d,g){
+  if(path){
+    db.ref(path+"/"+username).remove();
+    Object.values(calls).forEach(c=>c.close());
+    calls={};
+    document.querySelectorAll("audio").forEach(a=>a.remove());
+  }
 
-    stream=await navigator.mediaDevices.getUserMedia({audio:true});
-    peer=new Peer();
+  path=`groups/${d}/${g}`;
+  status.textContent=`Joined ${d} Group ${g}`;
 
-    peer.on("open",()=>{
-      login.style.display="none";
-      dimensions.style.display="flex";
-      status.style.display="block";
-      players.style.display="block";
-      muteBtn.style.display="block";
-    });
+  const me=db.ref(path+"/"+username);
+  me.set({peerId:peer.id,isTalking:false});
+  me.onDisconnect().remove();
 
-    peer.on("call",call=>{
-      call.answer(stream);
-      call.on("stream",s=>playAudio(s,call.peer));
-    });
-  };
+  db.ref(path).on("value",snap=>{
+    playerList.innerHTML="";
+    const all=snap.val()||{};
+    Object.keys(all).forEach(name=>{
+      const div=document.createElement("div");
+      div.className="player"+(all[name].isTalking?" talking":"");
+      div.textContent=name+(name===username?" (You)":"");
+      playerList.appendChild(div);
 
-  muteBtn.onclick=()=>{
-    muted=!muted;
-    stream.getAudioTracks()[0].enabled=!muted;
-    muteBtn.textContent=muted?"Unmute Mic":"Mute Mic";
-  };
-
-  document.querySelectorAll("button[data-d]").forEach(btn=>{
-    btn.onclick=()=>{
-      if(currentPath){
-        db.ref(currentPath+"/"+username).remove();
-        Object.values(calls).forEach(c=>c.close());
-        calls={};
-        document.querySelectorAll("audio").forEach(a=>a.remove());
+      if(name!==username && all[name].peerId && !calls[name]){
+        const call=peer.call(all[name].peerId,stream);
+        calls[name]=call;
+        call.on("stream",s=>playAudio(s,all[name].peerId));
       }
-
-      currentPath=`groups/${btn.dataset.d}/${btn.dataset.g}`;
-      status.textContent=`Joined ${btn.dataset.d} Group ${btn.dataset.g}`;
-
-      const ref=db.ref(currentPath+"/"+username);
-      ref.set({peerId:peer.id,isTalking:false});
-      ref.onDisconnect().remove();
-
-      db.ref(currentPath).on("value",snap=>{
-        playerList.innerHTML="";
-        const all=snap.val()||{};
-        Object.keys(all).forEach(name=>{
-          const d=all[name];
-          const div=document.createElement("div");
-          div.className="player"+(d.isTalking?" talking":"");
-          div.textContent=name+(name===username?" (You)":"");
-          playerList.appendChild(div);
-
-          if(name!==username&&d.peerId&&!calls[name]){
-            const call=peer.call(d.peerId,stream);
-            calls[name]=call;
-            call.on("stream",s=>playAudio(s,d.peerId));
-          }
-        });
-      });
-    };
+    });
   });
+}
 
-  function playAudio(s,id){
-    if(document.getElementById("a"+id))return;
-    const a=document.createElement("audio");
-    a.id="a"+id;
-    a.srcObject=s;
-    a.autoplay=true;
-    document.body.appendChild(a);
-  }
+function playAudio(s,id){
+  if(document.getElementById("a"+id))return;
+  const a=document.createElement("audio");
+  a.id="a"+id;
+  a.srcObject=s;
+  a.autoplay=true;
+  document.body.appendChild(a);
+}
 
-  const ctx=new AudioContext();
-  const analyser=ctx.createAnalyser();
-  analyser.fftSize=256;
-  const data=new Uint8Array(analyser.frequencyBinCount);
+const ctx=new AudioContext();
+const analyser=ctx.createAnalyser();
+analyser.fftSize=256;
+const data=new Uint8Array(analyser.frequencyBinCount);
 
-  function monitor(){
-    if(!stream||!currentPath)return;
-    const src=ctx.createMediaStreamSource(stream);
-    src.connect(analyser);
-    analyser.getByteFrequencyData(data);
-    const vol=data.reduce((a,b)=>a+b)/data.length;
-    db.ref(currentPath+"/"+username+"/isTalking").set(vol>25&&!muted);
-    requestAnimationFrame(monitor);
-  }
-
-  setTimeout(monitor,1500);
+function monitor(){
+  if(!stream||!path)return;
+  const src=ctx.createMediaStreamSource(stream);
+  src.connect(analyser);
+  analyser.getByteFrequencyData(data);
+  const vol=data.reduce((a,b)=>a+b)/data.length;
+  db.ref(path+"/"+username+"/isTalking").set(vol>25&&!muted);
+  requestAnimationFrame(monitor);
+}
+setTimeout(monitor,1500);
 </script>
 
 </body>
 </html>
-
