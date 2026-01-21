@@ -8,74 +8,29 @@
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
 <style>
-body{
-  background:#121212;
-  color:white;
-  font-family:Arial;
-  margin:0;
-  padding:20px
-}
-
+body{background:#121212;color:white;font-family:Arial;margin:0;padding:20px}
 h1,h2{text-align:center}
 
-.card{
-  max-width:400px;
-  margin:20px auto;
-  background:#1a1a1a;
-  padding:15px;
-  border-radius:12px;
-  text-align:center
-}
+.card{max-width:400px;margin:20px auto;background:#1a1a1a;padding:15px;border-radius:12px;text-align:center}
 
-input{
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:8px;
-  border:none;
-  background:#333;
-  color:white
-}
+input{width:100%;padding:12px;margin-top:10px;border-radius:8px;border:none;background:#333;color:white}
 
-button{
-  width:100%;
-  padding:14px;
-  margin:10px 0;
-  border:none;
-  border-radius:10px;
-  font-weight:bold;
-  cursor:pointer
-}
-
+button{width:100%;padding:14px;margin:10px 0;border:none;border-radius:10px;font-weight:bold;cursor:pointer}
 button:active{transform:scale(.96)}
 
 #joinBtn{background:#4caf50}
 
 #muteBtn{
   display:none;
-  max-width:260px;
-  margin:15px auto;
   background:#4caf50;
+  max-width:260px;
+  margin:10px auto;
 }
 
-.dimensions{
-  display:none;
-  flex-direction:column;
-  gap:20px;
-  max-width:1200px;
-  margin:20px auto
-}
+.dimensions{display:none;flex-direction:column;gap:20px;max-width:1200px;margin:20px auto}
+@media(min-width:800px){.dimensions{flex-direction:row}}
 
-@media(min-width:800px){
-  .dimensions{flex-direction:row}
-}
-
-.dimension{
-  flex:1;
-  padding:15px;
-  border-radius:12px
-}
-
+.dimension{flex:1;padding:15px;border-radius:12px}
 .overworld{background:#1f6f5f}
 .nether{background:#7a1f1f}
 .end{background:#4b2a6f}
@@ -161,42 +116,40 @@ const db=firebase.database();
 
 let username="";
 let path="";
-let peer;
-let stream;
+let peer=null;
+let stream=null;
 let calls={};
 let listener=null;
 let muted=true;
 
 joinBtn.onclick=async()=>{
-  if(roomCodeInput.value!==ROOM){
-    alert("Wrong password");
-    return;
-  }
+  if(roomCodeInput.value!==ROOM) return alert("Wrong password");
 
   username=usernameInput.value.trim();
-  if(!username){
-    alert("Enter username");
-    return;
-  }
+  if(!username) return alert("Enter username");
 
+  // SHOW UI FIRST (NO MORE RACE CONDITIONS)
+  login.style.display="none";
+  muteBtn.style.display="block";
+  dimensions.style.display="flex";
+  status.style.display="block";
+  players.style.display="block";
+
+  // MIC (START MUTED)
   stream=await navigator.mediaDevices.getUserMedia({audio:true});
   stream.getAudioTracks()[0].enabled=false;
 
+  // PEER
   peer=new Peer();
-
   peer.on("call",call=>{
     call.answer(stream);
     call.on("stream",s=>playAudio(s,call.peer));
   });
-
-  login.style.display="none";
-  dimensions.style.display="flex";
-  status.style.display="block";
-  players.style.display="block";
-  muteBtn.style.display="block";
 };
 
 muteBtn.onclick=()=>{
+  if(!stream) return;
+
   muted=!muted;
   stream.getAudioTracks()[0].enabled=!muted;
 
