@@ -8,95 +8,86 @@
 
 <style>
 body{
-  background:#121212;
+  background:#0f0f0f;
   color:white;
-  font-family:Arial;
+  font-family:Arial, sans-serif;
   margin:0;
-  padding:20px
+  padding:20px;
 }
 
-h1,h2{text-align:center}
+h1{text-align:center}
 
-.card{
+#login{
   max-width:400px;
-  margin:20px auto;
+  margin:30px auto;
   background:#1a1a1a;
-  padding:15px;
+  padding:20px;
   border-radius:12px;
-  text-align:center
+  text-align:center;
 }
 
 input{
   width:100%;
   padding:12px;
   margin-top:10px;
-  border-radius:8px;
   border:none;
+  border-radius:8px;
   background:#333;
-  color:white
+  color:white;
 }
 
 button{
   width:100%;
   padding:14px;
-  margin:10px 0;
+  margin-top:15px;
   border:none;
   border-radius:10px;
   font-weight:bold;
-  cursor:pointer
+  cursor:pointer;
 }
-
-button:active{transform:scale(.96)}
 
 #joinBtn{background:#4caf50}
 
 .dimensions{
   display:none;
-  flex-direction:column;
   gap:20px;
   max-width:1200px;
-  margin:20px auto
+  margin:30px auto;
 }
 
 @media(min-width:800px){
-  .dimensions{flex-direction:row}
+  .dimensions{display:flex}
 }
 
 .dimension{
   flex:1;
   padding:15px;
-  border-radius:12px
+  border-radius:14px;
 }
 
 .overworld{background:#1f6f5f}
 .nether{background:#7a1f1f}
 .end{background:#4b2a6f}
 
-#status{
-  max-width:600px;
-  margin:15px auto;
-  background:#1a1a1a;
-  padding:12px;
-  border-radius:10px;
-  text-align:center;
-  display:none
+.dimension button{
+  background:white;
+  color:black;
+  margin-top:10px;
 }
 
 #players{
-  max-width:600px;
-  margin:15px auto;
+  max-width:500px;
+  margin:30px auto;
   background:#1a1a1a;
-  padding:12px;
-  border-radius:10px;
-  text-align:center;
-  /* IMPORTANT: NEVER HIDDEN */
+  padding:15px;
+  border-radius:12px;
 }
 
 .player{
   background:#2a2a2a;
   padding:10px;
   margin:8px 0;
-  border-radius:8px
+  border-radius:8px;
 }
 </style>
 </head>
@@ -105,10 +96,10 @@ button:active{transform:scale(.96)}
 
 <h1>Proximity Chat</h1>
 
-<div class="card" id="login">
+<div id="login">
   <input id="usernameInput" placeholder="Minecraft Username">
-  <input id="roomCodeInput" type="password" placeholder="Room password">
-  <button id="joinBtn">Join</button>
+  <input id="passwordInput" type="password" placeholder="Room password">
+  <button id="joinBtn">Join Server</button>
 </div>
 
 <div class="dimensions" id="dimensions">
@@ -134,81 +125,66 @@ button:active{transform:scale(.96)}
   </div>
 </div>
 
-<div id="status"></div>
-
 <div id="players">
   <strong>Players in group</strong>
-  <div id="playerList">
-    <em>Join a group to see players</em>
-  </div>
+  <div id="playerList">Not in a group</div>
 </div>
 
 <script>
-const ROOM="BMS Minecraft";
+const ROOM_PASSWORD = "BMS Minecraft";
 
 firebase.initializeApp({
-  apiKey:"AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
-  authDomain:"proximity-chat-95107.firebaseapp.com",
-  databaseURL:"https://proximity-chat-95107-default-rtdb.firebaseio.com",
-  projectId:"proximity-chat-95107"
+  apiKey: "AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
+  authDomain: "proximity-chat-95107.firebaseapp.com",
+  databaseURL: "https://proximity-chat-95107-default-rtdb.firebaseio.com",
+  projectId: "proximity-chat-95107"
 });
 
-const db=firebase.database();
+const db = firebase.database();
 
-let username="";
-let path="";
-let listener=null;
+let username = "";
+let currentPath = "";
+let listener = null;
 
-joinBtn.onclick=()=>{
-  if(roomCodeInput.value!==ROOM){
+joinBtn.onclick = () => {
+  if (passwordInput.value !== ROOM_PASSWORD) {
     alert("Wrong password");
     return;
   }
 
-  username=usernameInput.value.trim();
-  if(!username){
+  username = usernameInput.value.trim();
+  if (!username) {
     alert("Enter username");
     return;
   }
 
-  login.style.display="none";
-  dimensions.style.display="flex";
-  status.style.display="block";
+  login.style.display = "none";
+  dimensions.style.display = "flex";
 };
 
 function leaveGroup(){
-  if(!path) return;
-
-  db.ref(path+"/"+username).remove();
-  if(listener) db.ref(path).off("value",listener);
-  path="";
-  playerList.innerHTML="<em>Join a group to see players</em>";
+  if(!currentPath) return;
+  db.ref(currentPath + "/" + username).remove();
+  if(listener) db.ref(currentPath).off("value", listener);
 }
 
-function joinGroup(d,g){
+function joinGroup(dim, group){
   leaveGroup();
 
-  path=`groups/${d}/${g}`;
-  status.textContent=`Joined ${d} Group ${g}`;
+  currentPath = `groups/${dim}/${group}`;
+  const myRef = db.ref(currentPath + "/" + username);
+  myRef.set(true);
+  myRef.onDisconnect().remove();
 
-  const me=db.ref(path+"/"+username);
-  me.set(true);
-  me.onDisconnect().remove();
+  playerList.innerHTML = "Loading players...";
 
-  // ALWAYS show yourself immediately
-  playerList.innerHTML="";
-  const self=document.createElement("div");
-  self.className="player";
-  self.textContent=username+" (You)";
-  playerList.appendChild(self);
-
-  listener=db.ref(path).on("value",snap=>{
-    playerList.innerHTML="";
-    const all=snap.val()||{};
-    Object.keys(all).forEach(name=>{
-      const div=document.createElement("div");
-      div.className="player";
-      div.textContent=name+(name===username?" (You)":"");
+  listener = db.ref(currentPath).on("value", snap => {
+    const players = snap.val() || {};
+    playerList.innerHTML = "";
+    Object.keys(players).forEach(name => {
+      const div = document.createElement("div");
+      div.className = "player";
+      div.textContent = name + (name === username ? " (You)" : "");
       playerList.appendChild(div);
     });
   });
