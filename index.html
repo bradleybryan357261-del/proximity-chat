@@ -48,6 +48,13 @@ button{
 
 #joinBtn{background:#4caf50}
 
+#muteBtn{
+  max-width:300px;
+  margin:20px auto;
+  display:none;
+  background:#e53935;
+}
+
 .dimensions{
   gap:20px;
   max-width:1200px;
@@ -104,7 +111,8 @@ button{
   <button id="joinBtn">Join Server</button>
 </div>
 
-<!-- 🔒 HARD-HIDDEN -->
+<button id="muteBtn">Mute Mic</button>
+
 <div class="dimensions" id="dimensions" hidden>
   <div class="dimension overworld">
     <h2>Overworld</h2>
@@ -148,8 +156,10 @@ const db = firebase.database();
 let username="";
 let currentPath="";
 let listener=null;
+let micStream=null;
+let isMuted=false;
 
-joinBtn.onclick=()=>{
+joinBtn.onclick=async ()=>{
   if(passwordInput.value!==ROOM_PASSWORD){
     alert("Wrong password");
     return;
@@ -161,8 +171,26 @@ joinBtn.onclick=()=>{
     return;
   }
 
-  login.hidden = true;
-  dimensions.hidden = false;
+  try{
+    micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+  }catch{
+    alert("Microphone permission denied");
+    return;
+  }
+
+  login.hidden=true;
+  dimensions.hidden=false;
+  muteBtn.style.display="block";
+};
+
+muteBtn.onclick=()=>{
+  if(!micStream) return;
+
+  isMuted = !isMuted;
+  micStream.getAudioTracks()[0].enabled = !isMuted;
+
+  muteBtn.textContent = isMuted ? "Unmute Mic" : "Mute Mic";
+  muteBtn.style.background = isMuted ? "#4caf50" : "#e53935";
 };
 
 function leaveGroup(){
