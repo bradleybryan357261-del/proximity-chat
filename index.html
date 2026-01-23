@@ -56,14 +56,14 @@ button{
 }
 
 .dimensions{
+  display:flex;
   gap:20px;
   max-width:1200px;
   margin:30px auto;
-  display:flex;
   flex-direction:column;
 }
 
-@media (min-width:900px){
+@media(min-width:900px){
   .dimensions{flex-direction:row}
 }
 
@@ -113,6 +113,7 @@ button{
 
 <button id="muteBtn">Mute Mic</button>
 
+<!-- 🔒 HARD BLOCKED -->
 <div class="dimensions" id="dimensions" hidden>
   <div class="dimension overworld">
     <h2>Overworld</h2>
@@ -145,10 +146,10 @@ button{
 const ROOM_PASSWORD = "BMS Minecraft";
 
 firebase.initializeApp({
-  apiKey: "AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
-  authDomain: "proximity-chat-95107.firebaseapp.com",
-  databaseURL: "https://proximity-chat-95107-default-rtdb.firebaseio.com",
-  projectId: "proximity-chat-95107"
+  apiKey:"AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
+  authDomain:"proximity-chat-95107.firebaseapp.com",
+  databaseURL:"https://proximity-chat-95107-default-rtdb.firebaseio.com",
+  projectId:"proximity-chat-95107"
 });
 
 const db = firebase.database();
@@ -156,16 +157,20 @@ const db = firebase.database();
 let username="";
 let currentPath="";
 let listener=null;
-let micStream=null;
+
+let audioCtx;
+let micSource;
+let silentGain;
+let micStream;
 let isMuted=false;
 
-joinBtn.onclick=async ()=>{
-  if(passwordInput.value!==ROOM_PASSWORD){
+joinBtn.onclick = async ()=>{
+  if(passwordInput.value !== ROOM_PASSWORD){
     alert("Wrong password");
     return;
   }
 
-  username=usernameInput.value.trim();
+  username = usernameInput.value.trim();
   if(!username){
     alert("Enter username");
     return;
@@ -173,21 +178,26 @@ joinBtn.onclick=async ()=>{
 
   try{
     micStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioCtx = new AudioContext();
+    micSource = audioCtx.createMediaStreamSource(micStream);
+    silentGain = audioCtx.createGain();
+    silentGain.gain.value = 0; // keep mic alive, no sound
+    micSource.connect(silentGain).connect(audioCtx.destination);
   }catch{
-    alert("Microphone permission denied");
+    alert("Mic permission denied");
     return;
   }
 
-  login.hidden=true;
-  dimensions.hidden=false;
-  muteBtn.style.display="block";
+  login.hidden = true;
+  dimensions.hidden = false;
+  muteBtn.style.display = "block";
 };
 
-muteBtn.onclick=()=>{
+muteBtn.onclick = ()=>{
   if(!micStream) return;
 
   isMuted = !isMuted;
-  micStream.getAudioTracks()[0].enabled = !isMuted;
+  silentGain.gain.value = isMuted ? 0 : 1;
 
   muteBtn.textContent = isMuted ? "Unmute Mic" : "Mute Mic";
   muteBtn.style.background = isMuted ? "#4caf50" : "#e53935";
@@ -203,18 +213,18 @@ function leaveGroup(){
 function joinGroup(dim,group){
   leaveGroup();
 
-  currentPath=`groups/${dim}/${group}`;
-  const me=db.ref(currentPath+"/"+username);
+  currentPath = `groups/${dim}/${group}`;
+  const me = db.ref(currentPath+"/"+username);
   me.set(true);
   me.onDisconnect().remove();
 
-  listener=db.ref(currentPath).on("value",snap=>{
-    const data=snap.val()||{};
+  listener = db.ref(currentPath).on("value", snap=>{
+    const data = snap.val() || {};
     playerList.innerHTML="";
     Object.keys(data).forEach(name=>{
       const div=document.createElement("div");
       div.className="player";
-      div.textContent=name+(name===username?" (You)":"");
+      div.textContent = name + (name===username?" (You)":"");
       playerList.appendChild(div);
     });
   });
