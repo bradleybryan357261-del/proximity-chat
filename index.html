@@ -18,11 +18,11 @@ body{
 h1{text-align:center}
 
 #login{
-  max-width:400px;
+  max-width:420px;
   margin:40px auto;
   background:#1a1a1a;
-  padding:20px;
-  border-radius:14px;
+  padding:22px;
+  border-radius:16px;
   text-align:center;
 }
 
@@ -49,20 +49,21 @@ button{
 #joinBtn{background:#4caf50}
 
 .dimensions{
-  display:none;
+  display:none; /* ONLY JS CAN SHOW THIS */
   gap:20px;
   max-width:1200px;
   margin:30px auto;
+  flex-direction:column;
 }
 
-@media(min-width:800px){
-  .dimensions{display:flex}
+@media (min-width: 900px){
+  .dimensions{flex-direction:row}
 }
 
 .dimension{
   flex:1;
-  padding:18px;
-  border-radius:16px;
+  padding:20px;
+  border-radius:18px;
 }
 
 .overworld{background:#1f6f5f}
@@ -76,11 +77,11 @@ button{
 }
 
 #players{
-  max-width:500px;
+  max-width:520px;
   margin:30px auto;
   background:#1a1a1a;
-  padding:15px;
-  border-radius:12px;
+  padding:16px;
+  border-radius:14px;
   text-align:center;
 }
 
@@ -143,48 +144,48 @@ firebase.initializeApp({
 
 const db = firebase.database();
 
-let username = "";
-let currentPath = "";
-let listener = null;
+let username="";
+let currentPath="";
+let listener=null;
 
-joinBtn.onclick = () => {
-  if (passwordInput.value !== ROOM_PASSWORD) {
+joinBtn.onclick=()=>{
+  if(passwordInput.value!==ROOM_PASSWORD){
     alert("Wrong password");
     return;
   }
 
-  username = usernameInput.value.trim();
-  if (!username) {
+  username=usernameInput.value.trim();
+  if(!username){
     alert("Enter username");
     return;
   }
 
-  login.style.display = "none";
-  dimensions.style.display = "flex";
+  login.style.display="none";
+  dimensions.style.display="flex";
 };
 
 function leaveGroup(){
   if(!currentPath) return;
-  db.ref(currentPath + "/" + username).remove();
-  if(listener) db.ref(currentPath).off("value", listener);
-  playerList.textContent = "Not in a group";
+  db.ref(currentPath+"/"+username).remove();
+  if(listener) db.ref(currentPath).off("value",listener);
+  playerList.textContent="Not in a group";
 }
 
-function joinGroup(dim, group){
+function joinGroup(dim,group){
   leaveGroup();
 
-  currentPath = `groups/${dim}/${group}`;
-  const myRef = db.ref(currentPath + "/" + username);
-  myRef.set(true);
-  myRef.onDisconnect().remove();
+  currentPath=`groups/${dim}/${group}`;
+  const me=db.ref(currentPath+"/"+username);
+  me.set(true);
+  me.onDisconnect().remove();
 
-  listener = db.ref(currentPath).on("value", snap => {
-    const players = snap.val() || {};
-    playerList.innerHTML = "";
-    Object.keys(players).forEach(name => {
-      const div = document.createElement("div");
-      div.className = "player";
-      div.textContent = name + (name === username ? " (You)" : "");
+  listener=db.ref(currentPath).on("value",snap=>{
+    const data=snap.val()||{};
+    playerList.innerHTML="";
+    Object.keys(data).forEach(name=>{
+      const div=document.createElement("div");
+      div.className="player";
+      div.textContent=name+(name===username?" (You)":"");
       playerList.appendChild(div);
     });
   });
