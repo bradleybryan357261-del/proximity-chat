@@ -11,45 +11,42 @@
 <style>
 body {
   margin: 0;
-  background: #0f0f0f;
+  background: #0e0e0e;
   color: white;
   font-family: Arial, sans-serif;
   text-align: center;
 }
 
+/* ---------- DESKTOP DEFAULT ---------- */
 h1 {
-  margin: 24px 0;
+  margin-top: 30px;
   font-size: 32px;
 }
 
-/* DESKTOP LOGIN (unchanged) */
 .card {
   background: #1c1c1c;
-  padding: 20px;
-  width: 100%;
-  max-width: 360px;
+  width: 360px;
   margin: 40px auto;
+  padding: 22px;
   border-radius: 18px;
 }
 
-/* INPUTS ALWAYS FIT */
 input {
   width: 100%;
   padding: 16px;
   margin: 12px 0;
+  font-size: 18px;
   border-radius: 12px;
   border: none;
-  font-size: 18px;
   box-sizing: border-box;
 }
 
 button {
   width: 100%;
   padding: 16px;
-  margin-top: 14px;
-  border: none;
-  border-radius: 14px;
   font-size: 18px;
+  border-radius: 14px;
+  border: none;
   font-weight: bold;
   cursor: pointer;
 }
@@ -61,45 +58,46 @@ button {
   background: #e91e63;
   color: white;
   max-width: 260px;
-  margin: 24px auto;
+  margin: 20px auto;
 }
 
-#app { display: none; }
-
-/* 📱📱📱 PHONE MODE — HUGE ON PURPOSE */
+/* ---------- PHONE MODE: GIANT ---------- */
 @media (max-width: 600px) {
+
   h1 {
-    font-size: 44px;
-    margin-top: 30px;
+    font-size: 56px;
+    margin-top: 40px;
   }
 
   .card {
-    max-width: 96%;
-    padding: 44px;
-    border-radius: 30px;
+    width: 94vw;              /* almost full screen */
+    padding: 60px;            /* BIG padding */
+    border-radius: 32px;
   }
 
   input {
-    padding: 26px;
-    font-size: 26px;
-    border-radius: 20px;
-    margin: 18px 0;
+    padding: 34px;
+    font-size: 30px;
+    margin: 24px 0;
+    border-radius: 22px;
   }
 
   button {
-    padding: 26px;
-    font-size: 26px;
-    border-radius: 22px;
-    margin-top: 22px;
+    padding: 34px;
+    font-size: 30px;
+    border-radius: 26px;
+    margin-top: 26px;
   }
 }
 
-/* GROUPS */
+/* ---------- APP ---------- */
+#app { display: none; }
+
 .dimensions {
   display: flex;
   gap: 20px;
   max-width: 1200px;
-  margin: 24px auto;
+  margin: 30px auto;
 }
 
 .dimension {
@@ -117,12 +115,11 @@ button {
   margin: 10px 0;
 }
 
-/* PLAYERS */
 #players {
   background: #1c1c1c;
   max-width: 560px;
-  margin: 24px auto;
-  padding: 18px;
+  margin: 30px auto;
+  padding: 20px;
   border-radius: 18px;
 }
 
@@ -133,10 +130,9 @@ button {
   border-radius: 12px;
 }
 
-/* TALKING GLOW */
 .talking {
   border: 3px solid #4caf50;
-  box-shadow: 0 0 18px #4caf50;
+  box-shadow: 0 0 20px #4caf50;
 }
 </style>
 </head>
@@ -156,6 +152,7 @@ button {
 
 <script>
 const ROOM_PASSWORD = "BMS Minecraft";
+
 const firebaseConfig = {
   apiKey: "AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
   authDomain: "proximity-chat-95107.firebaseapp.com",
@@ -169,8 +166,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let name="", stream, peer, currentGroup="", calls={}, muted=false;
-let analyser, dataArray;
+let name="", stream, peer, group="", calls={}, muted=false;
+let analyser, data;
 
 joinBtn.onclick = async () => {
   if (password.value !== ROOM_PASSWORD) return alert("Wrong password");
@@ -178,40 +175,39 @@ joinBtn.onclick = async () => {
   if (!name) return alert("Enter username");
 
   stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-  setupVoiceDetection(stream);
+  startVoiceDetect(stream);
 
   peer = new Peer();
-  peer.on("call", c => {
+  peer.on("call", c=>{
     c.answer(stream);
-    c.on("stream", s => playAudio(s, c.peer));
+    c.on("stream", s=>play(s,c.peer));
   });
 
   login.remove();
-  muteBtn.style.display = "block";
-  app.style.display = "block";
-  renderApp();
+  muteBtn.style.display="block";
+  app.style.display="block";
+  drawApp();
 };
 
-muteBtn.onclick = () => {
-  muted = !muted;
-  stream.getAudioTracks()[0].enabled = !muted;
+muteBtn.onclick = ()=>{
+  muted=!muted;
+  stream.getAudioTracks()[0].enabled=!muted;
   muteBtn.textContent = muted ? "Unmute Mic" : "Mute Mic";
 };
 
-function renderApp() {
-  app.innerHTML = `
-    <div class="dimensions">
-      ${dim("Overworld","overworld")}
-      ${dim("Nether","nether")}
-      ${dim("End","end")}
-    </div>
-    <div id="players">
-      <strong>Players in group</strong>
-      <div id="playerList">Not in a group</div>
-    </div>
-  `;
+function drawApp(){
+  app.innerHTML=`
+  <div class="dimensions">
+    ${dim("Overworld","overworld")}
+    ${dim("Nether","nether")}
+    ${dim("End","end")}
+  </div>
+  <div id="players">
+    <strong>Players in group</strong>
+    <div id="list">Not in group</div>
+  </div>`;
   document.querySelectorAll("[data-g]").forEach(b=>{
-    b.onclick=()=>joinGroup(b.dataset.g);
+    b.onclick=()=>join(b.dataset.g);
   });
 }
 
@@ -224,15 +220,15 @@ function dim(n,c){
   </div>`;
 }
 
-function joinGroup(g){
-  leaveGroup();
-  currentGroup=g;
-  const ref=db.ref("groups/"+g+"/"+name);
-  ref.set({peer:peer.id,talking:false});
-  ref.onDisconnect().remove();
+function join(g){
+  leave();
+  group=g;
+  const r=db.ref("groups/"+g+"/"+name);
+  r.set({peer:peer.id,talking:false});
+  r.onDisconnect().remove();
 
   db.ref("groups/"+g).on("value",s=>{
-    const list=document.getElementById("playerList");
+    const list=document.getElementById("list");
     list.innerHTML="";
     const u=s.val()||{};
     Object.keys(u).forEach(p=>{
@@ -243,38 +239,37 @@ function joinGroup(g){
       if(p!==name&&!calls[p]){
         const c=peer.call(u[p].peer,stream);
         calls[p]=c;
-        c.on("stream",st=>playAudio(st,u[p].peer));
+        c.on("stream",st=>play(st,u[p].peer));
       }
     });
   });
 }
 
-function leaveGroup(){
+function leave(){
   Object.values(calls).forEach(c=>c.close());
   calls={};
   document.querySelectorAll("audio").forEach(a=>a.remove());
 }
 
-function playAudio(s,id){
+function play(s,id){
   if(document.getElementById(id))return;
   const a=document.createElement("audio");
   a.id=id;a.srcObject=s;a.autoplay=true;
   document.body.appendChild(a);
 }
 
-function setupVoiceDetection(s){
+function startVoiceDetect(s){
   const ctx=new AudioContext();
   analyser=ctx.createAnalyser();
   const src=ctx.createMediaStreamSource(s);
   analyser.fftSize=256;
   src.connect(analyser);
-  dataArray=new Uint8Array(analyser.frequencyBinCount);
+  data=new Uint8Array(analyser.frequencyBinCount);
   (function loop(){
-    analyser.getByteFrequencyData(dataArray);
-    const v=dataArray.reduce((a,b)=>a+b)/dataArray.length;
-    if(currentGroup&&name)
-      db.ref("groups/"+currentGroup+"/"+name+"/talking")
-        .set(v>20&&!muted);
+    analyser.getByteFrequencyData(data);
+    const v=data.reduce((a,b)=>a+b)/data.length;
+    if(group&&name)
+      db.ref("groups/"+group+"/"+name+"/talking").set(v>20&&!muted);
     requestAnimationFrame(loop);
   })();
 }
