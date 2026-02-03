@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>NUCLEAR Proximity Chat</title>
+<title>Proximity Chat</title>
 
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -10,21 +10,11 @@
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
 <style>
-/* 🔥 NUCLEAR VISUAL PROOF */
 body {
   margin: 0;
   font-family: Arial, sans-serif;
-  background: #8b0000; /* DARK RED */
+  background: #121212;
   color: white;
-}
-
-#version {
-  text-align: center;
-  font-size: 32px;
-  font-weight: bold;
-  background: yellow;
-  color: black;
-  padding: 20px;
 }
 
 /* LOGIN */
@@ -32,14 +22,14 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
+  min-height: 100vh;
 }
 
 .login-card {
-  background: #111;
+  background: #1a1a1a;
   border-radius: 20px;
   padding: 40px;
-  width: 400px;
+  width: 420px;
   text-align: center;
 }
 
@@ -51,9 +41,11 @@ input {
   width: 100%;
   padding: 14px;
   font-size: 18px;
-  margin: 10px 0;
+  margin: 12px 0;
   border-radius: 10px;
   border: none;
+  background: #333;
+  color: white;
 }
 
 button {
@@ -72,7 +64,7 @@ button:active {
   transform: scale(0.96);
 }
 
-/* GROUPS (hidden until login) */
+/* GROUPS */
 #groups {
   display: none;
   padding: 20px;
@@ -92,31 +84,36 @@ button:active {
 .group {
   padding: 20px;
   border-radius: 16px;
+  text-align: center;
+  font-weight: bold;
 }
 
 .overworld { background: #1f6f5f; }
 .nether { background: #7a1f1f; }
 .end { background: #4b2a6f; }
 
-/* 📱 PHONE = ABSURDLY BIG */
+/* 📱 PHONE = REALLY REALLY MASSIVE */
 @media (max-width: 600px) {
   .login-card {
     width: 95%;
-    padding: 60px;
+    padding: 80px;
+    border-radius: 30px;
   }
 
   .login-card h1 {
-    font-size: 36px;
+    font-size: 42px;
   }
 
   input {
-    font-size: 26px;
-    padding: 24px;
+    font-size: 30px;
+    padding: 28px;
+    border-radius: 18px;
   }
 
   button {
-    font-size: 28px;
-    padding: 26px;
+    font-size: 32px;
+    padding: 30px;
+    border-radius: 20px;
   }
 }
 </style>
@@ -124,14 +121,12 @@ button:active {
 
 <body>
 
-<div id="version">☢️ NUCLEAR VERSION — IF YOU SEE THIS, IT UPDATED ☢️</div>
-
 <div id="login">
   <div class="login-card">
     <h1>Proximity Chat</h1>
-    <input id="username" placeholder="Minecraft Username">
+    <input id="username" placeholder="Minecraft Username" autocapitalize="none">
     <input id="password" type="password" placeholder="Room Password">
-    <button onclick="join()">JOIN</button>
+    <button onclick="join()">Join Server</button>
   </div>
 </div>
 
