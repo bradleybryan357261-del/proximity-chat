@@ -22,35 +22,34 @@ h1 {
   font-size: 32px;
 }
 
-/* LOGIN CARD — BIG ON PURPOSE */
+/* DESKTOP LOGIN (normal size) */
 .card {
   background: #1c1c1c;
-  padding: 32px;
-  width: 92%;
-  max-width: 460px; /* 👈 bigger overall */
+  padding: 20px;
+  width: 100%;
+  max-width: 360px;
   margin: 40px auto;
-  border-radius: 22px;
+  border-radius: 18px;
 }
 
-/* INPUTS SCALE WITH CARD */
+/* INPUTS — always fit */
 input {
   width: 100%;
-  padding: 18px;
-  margin: 14px 0;
-  border-radius: 14px;
+  padding: 16px;
+  margin: 12px 0;
+  border-radius: 12px;
   border: none;
-  font-size: 20px;
-  box-sizing: border-box; /* 👈 THIS fixes fitting */
+  font-size: 18px;
+  box-sizing: border-box;
 }
 
-/* BUTTONS SCALE TOO */
 button {
   width: 100%;
-  padding: 18px;
-  margin-top: 16px;
+  padding: 16px;
+  margin-top: 14px;
   border: none;
-  border-radius: 16px;
-  font-size: 20px;
+  border-radius: 14px;
+  font-size: 18px;
   font-weight: bold;
   cursor: pointer;
 }
@@ -70,6 +69,29 @@ button {
 
 #app { display: none; }
 
+/* 📱 PHONE ONLY — make login BIG */
+@media (max-width: 600px) {
+  .card {
+    max-width: 92%;
+    padding: 32px;
+    border-radius: 24px;
+  }
+
+  input {
+    padding: 20px;
+    font-size: 20px;
+  }
+
+  button {
+    padding: 20px;
+    font-size: 20px;
+  }
+
+  h1 {
+    font-size: 36px;
+  }
+}
+
 /* GROUPS */
 .dimensions {
   display: flex;
@@ -88,14 +110,9 @@ button {
 .nether { background: #7a1f1f; }
 .end { background: #4b2a6f; }
 
-.dimension h2 {
-  font-size: 22px;
-}
-
 .dimension button {
   background: white;
   margin: 10px 0;
-  font-size: 18px;
 }
 
 /* PLAYERS */
@@ -105,7 +122,6 @@ button {
   margin: 24px auto;
   padding: 18px;
   border-radius: 18px;
-  font-size: 18px;
 }
 
 .player {
@@ -113,7 +129,6 @@ button {
   padding: 12px;
   margin: 8px 0;
   border-radius: 12px;
-  transition: 0.15s;
 }
 
 /* TALKING GLOW */
@@ -128,7 +143,6 @@ button {
 
 <h1>Proximity Chat</h1>
 
-<!-- LOGIN -->
 <div class="card" id="login">
   <input id="username" placeholder="Minecraft Username">
   <input id="password" type="password" placeholder="Room Password">
