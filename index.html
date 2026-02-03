@@ -9,10 +9,6 @@
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
 <style>
-* {
-  box-sizing: border-box;
-}
-
 body {
   margin: 0;
   background: #0f0f0f;
@@ -27,9 +23,9 @@ h1 { margin: 30px 0; }
   background: #1c1c1c;
   padding: 20px;
   max-width: 360px;
-  width: 100%;
   margin: 30px auto;
   border-radius: 14px;
+  box-sizing: border-box;
 }
 
 input {
@@ -39,6 +35,7 @@ input {
   border-radius: 8px;
   border: none;
   font-size: 16px;
+  box-sizing: border-box;
 }
 
 button {
@@ -63,40 +60,6 @@ button {
 }
 
 #app { display: none; }
-
-/* 📱 PHONE — PROPER FIX */
-@media (max-width: 600px) {
-  body {
-    padding: 0;
-  }
-
-  h1 {
-    font-size: 48px;
-    margin-top: 40px;
-  }
-
-  .card {
-    max-width: none;
-    width: 92%;
-    margin: 40px auto;
-    padding: 48px;
-    border-radius: 32px;
-  }
-
-  input {
-    font-size: 28px;
-    padding: 26px;
-    margin: 16px 0;
-    border-radius: 18px;
-  }
-
-  button {
-    font-size: 30px;
-    padding: 28px;
-    margin-top: 20px;
-    border-radius: 22px;
-  }
-}
 
 .dimensions {
   display: flex;
@@ -134,6 +97,29 @@ button {
   margin: 6px 0;
   border-radius: 6px;
 }
+
+.player.talking {
+  box-shadow: 0 0 12px #00ff66;
+  border: 2px solid #00ff66;
+}
+
+/* 📱 PHONE ONLY — BIG LOGIN */
+@media (max-width: 600px) {
+  .card {
+    max-width: 95%;
+    padding: 30px;
+  }
+
+  input {
+    font-size: 18px;
+    padding: 16px;
+  }
+
+  button {
+    font-size: 18px;
+    padding: 18px;
+  }
+}
 </style>
 </head>
 
@@ -141,6 +127,7 @@ button {
 
 <h1>Proximity Chat</h1>
 
+<!-- LOGIN -->
 <div class="card" id="login">
   <input id="username" placeholder="Minecraft Username">
   <input id="password" type="password" placeholder="Room Password">
@@ -152,6 +139,7 @@ button {
 <div id="app"></div>
 
 <script>
+/* CONFIG */
 const ROOM_PASSWORD = "BMS Minecraft";
 const firebaseConfig = {
   apiKey: "AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
@@ -169,9 +157,11 @@ const db = firebase.database();
 let name = "";
 let stream;
 let peer;
+let currentGroup = "";
 let calls = {};
 let muted = false;
 
+/* LOGIN */
 joinBtn.onclick = async () => {
   if (password.value !== ROOM_PASSWORD) return alert("Wrong password");
   name = username.value.trim();
@@ -188,15 +178,18 @@ joinBtn.onclick = async () => {
   login.remove();
   muteBtn.style.display = "block";
   app.style.display = "block";
+
   renderApp();
 };
 
+/* MUTE */
 muteBtn.onclick = () => {
   muted = !muted;
   stream.getAudioTracks()[0].enabled = !muted;
   muteBtn.textContent = muted ? "Unmute Mic" : "Mute Mic";
 };
 
+/* UI */
 function renderApp() {
   app.innerHTML = `
     <div class="dimensions">
@@ -204,14 +197,16 @@ function renderApp() {
       ${dimension("Nether","nether")}
       ${dimension("End","end")}
     </div>
+
     <div id="players">
       <strong>Players in group</strong>
       <div id="playerList">Not in a group</div>
     </div>
   `;
-  document.querySelectorAll("[data-group]").forEach(b =>
-    b.onclick = () => joinGroup(b.dataset.group)
-  );
+
+  document.querySelectorAll("[data-group]").forEach(b => {
+    b.onclick = () => joinGroup(b.dataset.group);
+  });
 }
 
 function dimension(name, cls) {
@@ -225,33 +220,43 @@ function dimension(name, cls) {
   `;
 }
 
+/* GROUP + VOICE */
 function joinGroup(group) {
-  Object.values(calls).forEach(c => c.close());
-  calls = {};
-  document.querySelectorAll("audio").forEach(a => a.remove());
+  leaveGroup();
+  currentGroup = group;
 
   const ref = db.ref("groups/" + group + "/" + name);
-  ref.set(peer.id);
+  ref.set({ peer: peer.id, talking: false });
   ref.onDisconnect().remove();
 
   db.ref("groups/" + group).on("value", snap => {
     const list = document.getElementById("playerList");
     list.innerHTML = "";
+
     const users = snap.val() || {};
     Object.keys(users).forEach(u => {
       const div = document.createElement("div");
       div.className = "player";
+      if (users[u].talking) div.classList.add("talking");
       div.textContent = u;
       list.appendChild(div);
+
       if (u !== name && !calls[u]) {
-        const call = peer.call(users[u], stream);
+        const call = peer.call(users[u].peer, stream);
         calls[u] = call;
-        call.on("stream", s => playAudio(s, users[u]));
+        call.on("stream", s => playAudio(s, users[u].peer));
       }
     });
   });
 }
 
+function leaveGroup() {
+  Object.values(calls).forEach(c => c.close());
+  calls = {};
+  document.querySelectorAll("audio").forEach(a => a.remove());
+}
+
+/* AUDIO */
 function playAudio(stream, id) {
   if (document.getElementById(id)) return;
   const a = document.createElement("audio");
