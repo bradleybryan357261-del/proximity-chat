@@ -1,164 +1,262 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Proximity Chat</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
 <style>
 body {
-  margin: 0;
-  font-family: Arial, sans-serif;
   background: #121212;
   color: white;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
 }
 
-/* LOGIN */
-#login {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-}
+h1, h2 { text-align: center; }
 
-.login-card {
+.card {
+  max-width: 420px;
+  margin: 40px auto;
   background: #1a1a1a;
-  border-radius: 20px;
-  padding: 40px;
-  width: 420px;
+  padding: 20px;
+  border-radius: 14px;
   text-align: center;
-}
-
-.login-card h1 {
-  margin-top: 0;
 }
 
 input {
   width: 100%;
   padding: 14px;
-  font-size: 18px;
-  margin: 12px 0;
+  margin-top: 10px;
   border-radius: 10px;
   border: none;
+  font-size: 16px;
   background: #333;
   color: white;
 }
 
 button {
   width: 100%;
-  padding: 16px;
-  font-size: 18px;
+  padding: 14px;
+  margin-top: 12px;
   border-radius: 12px;
   border: none;
+  font-size: 16px;
+  font-weight: bold;
   background: #4caf50;
   color: white;
-  font-weight: bold;
   cursor: pointer;
 }
 
-button:active {
-  transform: scale(0.96);
-}
+button:active { transform: scale(0.96); }
 
-/* GROUPS */
-#groups {
+#muteBtn {
   display: none;
-  padding: 20px;
+  max-width: 200px;
+  margin: 10px auto;
+  background: #e91e63;
 }
 
-.group-grid {
-  display: grid;
+.dimensions {
+  display: none;
   gap: 20px;
+  max-width: 1200px;
+  margin: 20px auto;
 }
 
-@media (min-width: 900px) {
-  .group-grid {
-    grid-template-columns: repeat(3, 1fr);
+@media (min-width: 800px) {
+  .dimensions {
+    display: flex;
   }
 }
 
-.group {
-  padding: 20px;
-  border-radius: 16px;
-  text-align: center;
-  font-weight: bold;
+.dimension {
+  flex: 1;
+  padding: 15px;
+  border-radius: 12px;
 }
 
 .overworld { background: #1f6f5f; }
 .nether { background: #7a1f1f; }
 .end { background: #4b2a6f; }
 
-/* 📱 PHONE = REALLY REALLY MASSIVE */
-@media (max-width: 600px) {
-  .login-card {
-    width: 95%;
-    padding: 80px;
-    border-radius: 30px;
-  }
+#players {
+  display: none;
+  max-width: 600px;
+  margin: 20px auto;
+  background: #1a1a1a;
+  padding: 12px;
+  border-radius: 12px;
+}
 
-  .login-card h1 {
-    font-size: 42px;
-  }
+.player {
+  padding: 10px;
+  margin: 8px 0;
+  background: #2a2a2a;
+  border-radius: 10px;
+  border: 2px solid transparent;
+}
 
-  input {
-    font-size: 30px;
-    padding: 28px;
-    border-radius: 18px;
-  }
-
-  button {
-    font-size: 32px;
-    padding: 30px;
-    border-radius: 20px;
-  }
+.talking {
+  border-color: #4caf50;
+  box-shadow: 0 0 15px #4caf50;
 }
 </style>
 </head>
 
 <body>
 
-<div id="login">
-  <div class="login-card">
-    <h1>Proximity Chat</h1>
-    <input id="username" placeholder="Minecraft Username" autocapitalize="none">
-    <input id="password" type="password" placeholder="Room Password">
-    <button onclick="join()">Join Server</button>
+<h1>Proximity Chat</h1>
+
+<div class="card" id="login">
+  <input id="usernameInput" placeholder="Minecraft Username">
+  <input id="roomInput" type="password" placeholder="Room Password">
+  <button id="joinBtn">Join</button>
+</div>
+
+<button id="muteBtn">Mute Mic</button>
+
+<div class="dimensions" id="dimensions">
+  <div class="dimension overworld">
+    <h2>Overworld</h2>
+    <button data-d="Overworld" data-g="1">Group 1</button>
+    <button data-d="Overworld" data-g="2">Group 2</button>
+    <button data-d="Overworld" data-g="3">Group 3</button>
+  </div>
+
+  <div class="dimension nether">
+    <h2>Nether</h2>
+    <button data-d="Nether" data-g="1">Group 1</button>
+    <button data-d="Nether" data-g="2">Group 2</button>
+    <button data-d="Nether" data-g="3">Group 3</button>
+  </div>
+
+  <div class="dimension end">
+    <h2>End</h2>
+    <button data-d="End" data-g="1">Group 1</button>
+    <button data-d="End" data-g="2">Group 2</button>
+    <button data-d="End" data-g="3">Group 3</button>
   </div>
 </div>
 
-<div id="groups">
-  <h2 style="text-align:center;">Choose a Group</h2>
-  <div class="group-grid">
-    <div class="group overworld">Overworld – Group 1</div>
-    <div class="group overworld">Overworld – Group 2</div>
-    <div class="group overworld">Overworld – Group 3</div>
-
-    <div class="group nether">Nether – Group 1</div>
-    <div class="group nether">Nether – Group 2</div>
-    <div class="group nether">Nether – Group 3</div>
-
-    <div class="group end">End – Group 1</div>
-    <div class="group end">End – Group 2</div>
-    <div class="group end">End – Group 3</div>
-  </div>
+<div id="players">
+  <strong>Players in Group</strong>
+  <div id="playerList"></div>
 </div>
 
 <script>
 const ROOM_PASSWORD = "BMS Minecraft";
 
-function join() {
-  const user = document.getElementById("username").value.trim();
-  const pass = document.getElementById("password").value;
+const firebaseConfig = {
+  apiKey: "AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
+  authDomain: "proximity-chat-95107.firebaseapp.com",
+  databaseURL: "https://proximity-chat-95107-default-rtdb.firebaseio.com",
+  projectId: "proximity-chat-95107",
+  storageBucket: "proximity-chat-95107.firebasestorage.app",
+  messagingSenderId: "347116592936",
+  appId: "1:347116592936:web:4eb61da00f475c73a3fa1d"
+};
 
-  if (!user) return alert("Enter username");
-  if (pass !== ROOM_PASSWORD) return alert("Wrong password");
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  document.getElementById("login").remove();
-  document.getElementById("groups").style.display = "block";
+let username = "";
+let currentPath = "";
+let peer;
+let myStream;
+let calls = {};
+let muted = false;
+
+joinBtn.onclick = async () => {
+  if (roomInput.value !== ROOM_PASSWORD) return alert("Wrong password");
+  username = usernameInput.value.trim();
+  if (!username) return alert("Enter username");
+
+  myStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  peer = new Peer();
+  peer.on("call", call => {
+    call.answer(myStream);
+    call.on("stream", s => playAudio(s, call.peer));
+  });
+
+  setupTalkingGlow();
+
+  login.style.display = "none";
+  dimensions.style.display = "flex";
+  players.style.display = "block";
+  muteBtn.style.display = "block";
+};
+
+muteBtn.onclick = () => {
+  muted = !muted;
+  myStream.getAudioTracks()[0].enabled = !muted;
+  muteBtn.textContent = muted ? "Unmute Mic" : "Mute Mic";
+};
+
+document.querySelectorAll("button[data-d]").forEach(btn => {
+  btn.onclick = () => {
+    if (currentPath) {
+      db.ref(currentPath + "/" + username).remove();
+      Object.values(calls).forEach(c => c.close());
+      calls = {};
+      document.querySelectorAll("audio").forEach(a => a.remove());
+    }
+
+    currentPath = `groups/${btn.dataset.d}/${btn.dataset.g}`;
+    const me = db.ref(currentPath + "/" + username);
+    me.set({ peerId: peer.id, talking: false });
+    me.onDisconnect().remove();
+
+    db.ref(currentPath).on("value", snap => {
+      playerList.innerHTML = "";
+      const data = snap.val() || {};
+      Object.keys(data).forEach(name => {
+        const d = data[name];
+        const div = document.createElement("div");
+        div.className = "player" + (d.talking ? " talking" : "");
+        div.textContent = name;
+        playerList.appendChild(div);
+
+        if (name !== username && !calls[name]) {
+          const call = peer.call(d.peerId, myStream);
+          calls[name] = call;
+          call.on("stream", s => playAudio(s, d.peerId));
+        }
+      });
+    });
+  };
+});
+
+function playAudio(stream, id) {
+  if (document.getElementById(id)) return;
+  const a = document.createElement("audio");
+  a.id = id;
+  a.srcObject = stream;
+  a.autoplay = true;
+  document.body.appendChild(a);
+}
+
+function setupTalkingGlow() {
+  const ctx = new AudioContext();
+  const analyser = ctx.createAnalyser();
+  const src = ctx.createMediaStreamSource(myStream);
+  src.connect(analyser);
+  const data = new Uint8Array(analyser.frequencyBinCount);
+
+  function loop() {
+    analyser.getByteFrequencyData(data);
+    const vol = data.reduce((a,b)=>a+b)/data.length;
+    if (currentPath) {
+      db.ref(currentPath + "/" + username + "/talking").set(vol > 25 && !muted);
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
 }
 </script>
 
