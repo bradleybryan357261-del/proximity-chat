@@ -17,32 +17,33 @@ body {
   text-align: center;
 }
 
-h1 { margin: 30px 0; }
+h1 { margin: 20px 0; }
 
+/* LOGIN (mobile friendly) */
 .card {
   background: #1c1c1c;
-  padding: 20px;
-  max-width: 360px;
+  padding: 24px;
+  max-width: 420px;
   margin: 30px auto;
-  border-radius: 14px;
+  border-radius: 18px;
 }
 
 input {
   width: 100%;
-  padding: 12px;
-  margin: 8px 0;
-  border-radius: 8px;
+  padding: 16px;
+  margin: 10px 0;
+  border-radius: 12px;
   border: none;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 button {
   width: 100%;
-  padding: 14px;
-  margin-top: 10px;
+  padding: 16px;
+  margin-top: 12px;
   border: none;
-  border-radius: 10px;
-  font-size: 16px;
+  border-radius: 14px;
+  font-size: 18px;
   font-weight: bold;
   cursor: pointer;
 }
@@ -53,23 +54,24 @@ button {
   display: none;
   background: #e91e63;
   color: white;
-  max-width: 200px;
+  max-width: 240px;
   margin: 20px auto;
 }
 
 #app { display: none; }
 
+/* GROUPS */
 .dimensions {
   display: flex;
   gap: 20px;
   max-width: 1200px;
-  margin: 30px auto;
+  margin: 20px auto;
 }
 
 .dimension {
   flex: 1;
-  padding: 15px;
-  border-radius: 16px;
+  padding: 16px;
+  border-radius: 18px;
 }
 
 .overworld { background: #1f6f5f; }
@@ -81,19 +83,27 @@ button {
   margin: 8px 0;
 }
 
+/* PLAYERS */
 #players {
   background: #1c1c1c;
-  max-width: 500px;
+  max-width: 520px;
   margin: 20px auto;
-  padding: 15px;
-  border-radius: 12px;
+  padding: 16px;
+  border-radius: 16px;
 }
 
 .player {
   background: #2a2a2a;
-  padding: 8px;
+  padding: 10px;
   margin: 6px 0;
-  border-radius: 6px;
+  border-radius: 10px;
+  transition: 0.15s;
+}
+
+/* TALKING GLOW */
+.talking {
+  border: 2px solid #4caf50;
+  box-shadow: 0 0 14px #4caf50;
 }
 </style>
 </head>
@@ -135,6 +145,7 @@ let peer;
 let currentGroup = "";
 let calls = {};
 let muted = false;
+let analyser, dataArray;
 
 /* LOGIN */
 joinBtn.onclick = async () => {
@@ -143,8 +154,10 @@ joinBtn.onclick = async () => {
   if (!name) return alert("Enter username");
 
   stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  peer = new Peer();
 
+  setupVoiceDetection(stream);
+
+  peer = new Peer();
   peer.on("call", call => {
     call.answer(stream);
     call.on("stream", s => playAudio(s, call.peer));
@@ -201,24 +214,24 @@ function joinGroup(group) {
   currentGroup = group;
 
   const ref = db.ref("groups/" + group + "/" + name);
-  ref.set(peer.id);
+  ref.set({ peer: peer.id, talking: false });
   ref.onDisconnect().remove();
 
   db.ref("groups/" + group).on("value", snap => {
     const list = document.getElementById("playerList");
     list.innerHTML = "";
-
     const users = snap.val() || {};
+
     Object.keys(users).forEach(u => {
       const div = document.createElement("div");
-      div.className = "player";
+      div.className = "player" + (users[u].talking ? " talking" : "");
       div.textContent = u;
       list.appendChild(div);
 
       if (u !== name && !calls[u]) {
-        const call = peer.call(users[u], stream);
+        const call = peer.call(users[u].peer, stream);
         calls[u] = call;
-        call.on("stream", s => playAudio(s, users[u]));
+        call.on("stream", s => playAudio(s, users[u].peer));
       }
     });
   });
@@ -230,7 +243,7 @@ function leaveGroup() {
   document.querySelectorAll("audio").forEach(a => a.remove());
 }
 
-/* AUDIO */
+/* AUDIO PLAY */
 function playAudio(stream, id) {
   if (document.getElementById(id)) return;
   const a = document.createElement("audio");
@@ -238,6 +251,28 @@ function playAudio(stream, id) {
   a.srcObject = stream;
   a.autoplay = true;
   document.body.appendChild(a);
+}
+
+/* TALKING DETECTION (works on phone + PC) */
+function setupVoiceDetection(stream) {
+  const ctx = new AudioContext();
+  analyser = ctx.createAnalyser();
+  const src = ctx.createMediaStreamSource(stream);
+  analyser.fftSize = 256;
+  src.connect(analyser);
+  dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+  function loop() {
+    analyser.getByteFrequencyData(dataArray);
+    const volume = dataArray.reduce((a,b)=>a+b) / dataArray.length;
+    const talking = volume > 20 && !muted;
+
+    if (currentGroup && name) {
+      db.ref("groups/" + currentGroup + "/" + name + "/talking").set(talking);
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
 }
 </script>
 
