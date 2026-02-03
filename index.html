@@ -6,103 +6,92 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
 
 <style>
 body {
-  background:#0f0f0f;
-  color:white;
-  font-family:Arial, sans-serif;
-  margin:0;
-  padding:20px;
+  margin: 0;
+  background: #0f0f0f;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
 }
 
-h1 { text-align:center; }
+h1 { margin: 30px 0; }
 
 .card {
-  max-width:400px;
-  margin:20px auto;
-  background:#1a1a1a;
-  padding:20px;
-  border-radius:14px;
+  background: #1c1c1c;
+  padding: 20px;
+  max-width: 360px;
+  margin: 30px auto;
+  border-radius: 14px;
 }
 
 input {
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:8px;
-  margin-bottom:10px;
-  font-size:16px;
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0;
+  border-radius: 8px;
+  border: none;
+  font-size: 16px;
 }
 
 button {
-  width:100%;
-  padding:14px;
-  border:none;
-  border-radius:10px;
-  font-size:16px;
-  font-weight:bold;
-  cursor:pointer;
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
 }
 
-button:active { transform:scale(0.97); }
-
-#joinBtn { background:#4caf50; }
+#joinBtn { background: #4caf50; color: black; }
 #muteBtn {
-  background:#e91e63;
-  max-width:200px;
-  margin:15px auto;
-  display:none;
+  display: none;
+  background: #e91e63;
+  color: white;
+  max-width: 200px;
+  margin: 20px auto;
 }
+
+#app { display: none; }
 
 .dimensions {
-  display:none;
-  gap:20px;
-  max-width:1200px;
-  margin:30px auto;
-}
-
-@media(min-width:900px){
-  .dimensions { display:flex; }
+  display: flex;
+  gap: 20px;
+  max-width: 1200px;
+  margin: 30px auto;
 }
 
 .dimension {
-  flex:1;
-  padding:15px;
-  border-radius:14px;
+  flex: 1;
+  padding: 15px;
+  border-radius: 16px;
 }
 
-.overworld { background:#1f6f5f; }
-.nether { background:#7a1f1f; }
-.end { background:#4b2a6f; }
+.overworld { background: #1f6f5f; }
+.nether { background: #7a1f1f; }
+.end { background: #4b2a6f; }
 
 .dimension button {
-  background:white;
-  color:black;
-  margin-top:10px;
+  background: white;
+  margin: 8px 0;
 }
 
 #players {
-  display:none;
-  max-width:500px;
-  margin:20px auto;
-  background:#1a1a1a;
-  padding:15px;
-  border-radius:12px;
+  background: #1c1c1c;
+  max-width: 500px;
+  margin: 20px auto;
+  padding: 15px;
+  border-radius: 12px;
 }
 
 .player {
-  padding:10px;
-  border-radius:8px;
-  background:#2a2a2a;
-  margin:6px 0;
-  border:2px solid transparent;
-}
-
-.talking {
-  border-color:#4caf50;
-  box-shadow:0 0 12px #4caf50;
+  background: #2a2a2a;
+  padding: 8px;
+  margin: 6px 0;
+  border-radius: 6px;
 }
 </style>
 </head>
@@ -111,134 +100,112 @@ button:active { transform:scale(0.97); }
 
 <h1>Proximity Chat</h1>
 
+<!-- LOGIN ONLY -->
 <div class="card" id="login">
   <input id="username" placeholder="Minecraft Username">
-  <input id="password" type="password" placeholder="Room password">
+  <input id="password" type="password" placeholder="Room Password">
   <button id="joinBtn">Join Server</button>
 </div>
 
 <button id="muteBtn">Mute Mic</button>
 
-<div class="dimensions" id="dimensions">
-  <div class="dimension overworld">
-    <h2>Overworld</h2>
-    <button data-d="Overworld" data-g="1">Group 1</button>
-    <button data-d="Overworld" data-g="2">Group 2</button>
-    <button data-d="Overworld" data-g="3">Group 3</button>
-  </div>
-
-  <div class="dimension nether">
-    <h2>Nether</h2>
-    <button data-d="Nether" data-g="1">Group 1</button>
-    <button data-d="Nether" data-g="2">Group 2</button>
-    <button data-d="Nether" data-g="3">Group 3</button>
-  </div>
-
-  <div class="dimension end">
-    <h2>End</h2>
-    <button data-d="End" data-g="1">Group 1</button>
-    <button data-d="End" data-g="2">Group 2</button>
-    <button data-d="End" data-g="3">Group 3</button>
-  </div>
-</div>
-
-<div id="players">
-  <strong>Players in group</strong>
-  <div id="playerList">Not in a group</div>
-</div>
+<!-- APP (CREATED AFTER LOGIN) -->
+<div id="app"></div>
 
 <script>
+/* CONFIG */
 const ROOM_PASSWORD = "BMS Minecraft";
-
 const firebaseConfig = {
   apiKey: "AIzaSyCR0kIMG1QJzWMUh52UYduYoL9a-f_Db-w",
   authDomain: "proximity-chat-95107.firebaseapp.com",
   databaseURL: "https://proximity-chat-95107-default-rtdb.firebaseio.com",
-  projectId: "proximity-chat-95107"
+  projectId: "proximity-chat-95107",
+  storageBucket: "proximity-chat-95107.appspot.com",
+  messagingSenderId: "347116592936",
+  appId: "1:347116592936:web:4eb61da00f475c73a3fa1d"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let username="", stream, peer, currentPath="", calls={}, muted=false;
+let name = "";
+let currentRef = null;
+let stream = null;
+let muted = false;
 
-async function initMic(){
-  stream = await navigator.mediaDevices.getUserMedia({audio:true});
-  peer = new Peer();
-  peer.on("call", call=>{
-    call.answer(stream);
-    call.on("stream", s=>{
-      const a=new Audio(); a.srcObject=s; a.autoplay=true;
-    });
+/* LOGIN */
+joinBtn.onclick = async () => {
+  if (password.value !== ROOM_PASSWORD) return alert("Wrong password");
+  name = username.value.trim();
+  if (!name) return alert("Enter username");
+
+  stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  login.remove();
+  muteBtn.style.display = "block";
+  app.style.display = "block";
+
+  renderApp();
+};
+
+/* MUTE */
+muteBtn.onclick = () => {
+  muted = !muted;
+  stream.getAudioTracks()[0].enabled = !muted;
+  muteBtn.textContent = muted ? "Unmute Mic" : "Mute Mic";
+};
+
+/* BUILD UI AFTER LOGIN */
+function renderApp() {
+  app.innerHTML = `
+    <div class="dimensions">
+      ${makeDimension("Overworld","overworld")}
+      ${makeDimension("Nether","nether")}
+      ${makeDimension("End","end")}
+    </div>
+
+    <div id="players">
+      <strong>Players in group</strong>
+      <div id="playerList">Not in a group</div>
+    </div>
+  `;
+
+  document.querySelectorAll("[data-path]").forEach(btn => {
+    btn.onclick = () => joinGroup(btn.dataset.path);
   });
-  startVisualizer();
 }
 
-document.getElementById("joinBtn").onclick=async()=>{
-  if(password.value!==ROOM_PASSWORD) return alert("Wrong password");
-  username=username.value.trim();
-  if(!username) return alert("Enter username");
+function makeDimension(name, cls) {
+  return `
+    <div class="dimension ${cls}">
+      <h2>${name}</h2>
+      <button data-path="${name}/1">Group 1</button>
+      <button data-path="${name}/2">Group 2</button>
+      <button data-path="${name}/3">Group 3</button>
+    </div>
+  `;
+}
 
-  await initMic();
+/* GROUP JOIN */
+function joinGroup(path) {
+  if (currentRef) currentRef.remove();
 
-  login.style.display="none";
-  dimensions.style.display="flex";
-  players.style.display="block";
-  muteBtn.style.display="block";
-};
+  const ref = db.ref("groups/" + path + "/" + name);
+  currentRef = ref;
+  ref.set(true);
+  ref.onDisconnect().remove();
 
-muteBtn.onclick=()=>{
-  muted=!muted;
-  stream.getAudioTracks()[0].enabled=!muted;
-  muteBtn.textContent=muted?"Unmute Mic":"Mute Mic";
-};
-
-document.querySelectorAll("[data-d]").forEach(btn=>{
-  btn.onclick=()=>{
-    if(currentPath){
-      db.ref(currentPath+"/"+username).remove();
-      Object.values(calls).forEach(c=>c.close());
-      calls={};
-    }
-
-    currentPath=`groups/${btn.dataset.d}/${btn.dataset.g}`;
-    const me=db.ref(currentPath+"/"+username);
-    me.set({peerId:peer.id,isTalking:false});
-    me.onDisconnect().remove();
-
-    db.ref(currentPath).on("value",snap=>{
-      playerList.innerHTML="";
-      const all=snap.val()||{};
-      Object.keys(all).forEach(name=>{
-        const p=all[name];
-        const div=document.createElement("div");
-        div.className="player"+(p.isTalking?" talking":"");
-        div.textContent=name+(name===username?" (You)":"");
-        playerList.appendChild(div);
-
-        if(name!==username && !calls[name]){
-          const call=peer.call(p.peerId,stream);
-          calls[name]=call;
-        }
-      });
+  db.ref("groups/" + path).on("value", snap => {
+    const list = document.getElementById("playerList");
+    list.innerHTML = "";
+    const data = snap.val() || {};
+    Object.keys(data).forEach(p => {
+      const d = document.createElement("div");
+      d.className = "player";
+      d.textContent = p;
+      list.appendChild(d);
     });
-  };
-});
-
-function startVisualizer(){
-  const ctx=new AudioContext();
-  const src=ctx.createMediaStreamSource(stream);
-  const analyser=ctx.createAnalyser();
-  src.connect(analyser);
-  const data=new Uint8Array(analyser.frequencyBinCount);
-
-  (function loop(){
-    analyser.getByteFrequencyData(data);
-    const vol=data.reduce((a,b)=>a+b)/data.length;
-    if(currentPath && username)
-      db.ref(currentPath+"/"+username+"/isTalking").set(vol>25 && !muted);
-    requestAnimationFrame(loop);
-  })();
+  });
 }
 </script>
 
